@@ -1,0 +1,36 @@
+name: Validation C++23
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  verifier:
+    name: ${{ matrix.nom }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - nom: GCC 13
+            systeme: ubuntu-24.04
+            compilateur: g++-13
+          - nom: Clang 18
+            systeme: ubuntu-24.04
+            compilateur: clang++-18
+          - nom: MSVC
+            systeme: windows-2022
+            compilateur: ""
+    runs-on: ${{ matrix.systeme }}
+    steps:
+      - name: Recuperer les sources
+        uses: actions/checkout@v4
+      - name: Configurer sous Linux
+        if: runner.os == 'Linux'
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=${{ matrix.compilateur }}
+      - name: Configurer sous Windows
+        if: runner.os == 'Windows'
+        run: cmake -S . -B build -A x64
+      - name: Compiler
+        run: cmake --build build --config Release --parallel 2
+      - name: Verifier les comportements et les refus de compilation
+        run: ctest --test-dir build -C Release --output-on-failure
+      - name: Verifier l'installation
+        run: cmake --install build --config Release --prefix installation
