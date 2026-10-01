@@ -1,0 +1,49 @@
+GCC 16.2 ; Linux x86-64 dans Docker Desktop ; 1er octobre 2026
+Dispatch : -std=c++23 -O3 -DNDEBUG ; graine 42 ; 20 millions d appels ; mediane de cinq passages par execution
+Comparaison controlee : meme code final sauf indice_lineaire sans/avec always_inline ; trois executions alternees
+Execution 1 ; avant
+Reflexion=0 ; iterations=20000000 ; graine=42
+Simple : 3.6212 ns/appel ; somme=128852540
+Double : 3.16967 ns/appel ; somme=248745053
+Heritage virtuel : 11.9864 ns/appel ; somme=300097604
+Execution 1 ; corrige
+Reflexion=0 ; iterations=20000000 ; graine=42
+Simple : 1.00777 ns/appel ; somme=128852540
+Double : 1.47979 ns/appel ; somme=248745053
+Heritage virtuel : 12.1218 ns/appel ; somme=300097604
+Execution 2 ; avant
+Reflexion=0 ; iterations=20000000 ; graine=42
+Simple : 3.51134 ns/appel ; somme=128852540
+Double : 3.20063 ns/appel ; somme=248745053
+Heritage virtuel : 12.021 ns/appel ; somme=300097604
+Execution 2 ; corrige
+Reflexion=0 ; iterations=20000000 ; graine=42
+Simple : 1.00024 ns/appel ; somme=128852540
+Double : 1.50327 ns/appel ; somme=248745053
+Heritage virtuel : 12.1528 ns/appel ; somme=300097604
+Execution 3 ; avant
+Reflexion=0 ; iterations=20000000 ; graine=42
+Simple : 3.55279 ns/appel ; somme=128852540
+Double : 3.19399 ns/appel ; somme=248745053
+Heritage virtuel : 11.964 ns/appel ; somme=300097604
+Execution 3 ; corrige
+Reflexion=0 ; iterations=20000000 ; graine=42
+Simple : 1.07633 ns/appel ; somme=128852540
+Double : 1.45656 ns/appel ; somme=248745053
+Heritage virtuel : 12.0643 ns/appel ; somme=300097604
+Variantes exploratoires : une execution chacune, memes parametres ; comparaison indicative, pas classement universel
+Variante egalites
+Reflexion=0 ; iterations=20000000 ; graine=42
+Simple : 2.49268 ns/appel ; somme=128852540
+Double : 3.28081 ns/appel ; somme=248745053
+Heritage virtuel : 12.4081 ns/appel ; somme=300097604
+Variante masque
+Reflexion=0 ; iterations=20000000 ; graine=42
+Simple : 6.79853 ns/appel ; somme=128852540
+Double : 9.77379 ns/appel ; somme=248745053
+Heritage virtuel : 13.2173 ns/appel ; somme=300097604
+Variante direct
+Reflexion=0 ; iterations=20000000 ; graine=42
+Simple : 1.03436 ns/appel ; somme=128852540
+Double : 1.66526 ns/appel ; somme=248745053
+Heritage virtuel : 12.4954 ns/appel ; somme=300097604

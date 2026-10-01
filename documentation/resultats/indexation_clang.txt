@@ -1,0 +1,8 @@
+Compilateur=Clang 23.1.2 (https://github.com/llvm/llvm-project 85ac560262434c9ccfc0c183ec22d4138ed647fb)
+iterations=5000000;graine=42;passages=7;LTO=desactive;initialisation=hors_chronometrage
+Types;Lineaire ns/recherche;Hachage ns/recherche;Somme
+2;1.276;1.963;2500018
+4;2.181;4.983;7499983
+8;2.623;3.847;17500020
+16;3.113;2.218;37500012
+32;3.859;3.649;77499726

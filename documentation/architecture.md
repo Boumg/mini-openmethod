@@ -1,5 +1,100 @@
 # Architecture et choix de conception
 
+## Organisation des en-têtes
+
+- `mini_openmethod/domaines.hpp` déclare `liste_types`, `domaines` et l'exception
+  `type_inconnu`.
+- `mini_openmethod/detail/traits.hpp` regroupe les assistants internes :
+  les concepts de signature, `types_uniques` et `traits_liste`.
+  Il inclut `domaines.hpp` et `detail/traits_fonction.hpp`.
+- `mini_openmethod/detail/traits_fonction.hpp` analyse les signatures avec
+  Boost.CallableTraits, dans les deux modes.
+- `mini_openmethod/detail/index_types.hpp` fournit les recherches RTTI linéaire
+  et hachée, avec validation du type exact.
+- `mini_openmethod/reference_preparee.hpp` décrit une référence non propriétaire
+  et son indice déjà validé, liés à une racine et une liste ordonnée de types.
+- `mini_openmethod/configuration.hpp` détecte les capacités activées et expose
+  `reflexion_active` ; une définition explicite permet de forcer le choix.
+- `mini_openmethod/detail/resolution_cpp23.hpp` et `resolution_cpp26.hpp`
+  calculent les indices des spécialisations gagnantes. `resolution.hpp`
+  sélectionne l'un des deux générateurs.
+- `mini_openmethod/detail/selection.hpp` choisit le candidat maximal unique
+  parmi les seules spécialisations applicables, dans les deux modes.
+- `mini_openmethod/methode.hpp` valide le contrat, transforme les indices en
+  pointeurs de relais et gère l'appel. Il fournit aussi la fabrique `creer_methode`.
+
+Les en-têtes publics peuvent être inclus seuls. L'inclusion de `methode.hpp`
+reste suffisante pour utiliser toute l'API publique ; les noms de `detail`
+restent internes. Seul `resolution_cpp26.hpp` exige directement une chaîne
+compatible réflexion ; la sélection évite son inclusion en C++23.
+
+## Deux générations de tables, une API commune
+
+L'analyse des signatures est commune : `boost::callable_traits::return_type_t`
+fournit le retour et `args_t` forme le tuple des paramètres. Les quelques
+adaptateurs normalisent les pointeurs et opérateurs d'appel avant cette analyse.
+Les contraintes du projet refusent toujours les variadiques et les fonctions
+qualifiées `volatile`, `&` ou `&&`. En particulier, l'objet implicite d'un pointeur
+de membre n'est pas ajouté aux paramètres. Voir la
+[référence de Boost.CallableTraits](https://www.boost.org/doc/libs/latest/libs/callable_traits/doc/html/callable_traits/reference.html).
+
+`types_uniques` est un alias de `boost::mp11::mp_is_set` : le contrôle récursif
+interne est remplacé par l'[opération d'ensemble de Boost.Mp11](https://www.boost.org/doc/libs/latest/libs/mp11/doc/html/mp11.html).
+Les autres traits déjà exprimés simplement avec `std` restent standards.
+
+Le générateur C++23 utilise des `index_sequence`, des développements de
+paramètres et `std::derived_from` pour évaluer l'applicabilité et la dominance.
+
+Le générateur C++26 convertit les domaines et les signatures en collections de
+`std::meta::info`. `dealias` enlève les alias avant `template_arguments_of`.
+Les types des domaines et des paramètres sont ensuite normalisés et dédupliqués.
+Une matrice mémorise la relation d'héritage public pour chaque paire de types
+distincts. Les signatures conservent seulement les indices de ces types.
+La compatibilité de chaque position est calculée une fois, puis réutilisée
+dans toutes les cases du produit cartésien. Une position déjà incompatible
+n'effectue pas la recherche aux positions suivantes.
+
+La sélection commune compacte les candidats applicables. Elle rend directement
+l'unique candidat lorsqu'il n'y en a qu'un ; sinon elle compare leur dominance.
+La voie réfléchie utilise la matrice des types pour ces comparaisons, sans
+construire une matrice de toutes les paires de fonctions. La voie C++23 conserve
+sa matrice de dominance calculée par modèles. Les requêtes de réflexion ne sont
+donc plus répétées pour chaque paire de fonctions et chaque case de dispatch.
+Ces collections temporaires sont détruites avant la fin de l'évaluation
+constante ; elles ne deviennent pas des données d'exécution.
+
+Les générateurs renvoient le même format : un tableau d'indices, avec K pour
+une absence de candidat et K + 1 pour une ambiguïté, K étant le nombre de
+spécialisations. La couche commune vérifie ces sentinelles par `static_assert`
+et produit une table `constexpr` de pointeurs de fonctions. Les diagnostics et
+les règles de sélection sont ainsi partagés. La réflexion réduit le recours
+aux développements de modèles ; elle ne promet pas une compilation plus rapide.
+
+Les adaptateurs de pointeurs et de foncteurs restent communs. Pour un pointeur
+de membre, la forme `Fonction Classe::*` extrait le type de fonction sans
+énumérer chaque combinaison de qualifications. Dans les deux modes, les traits
+reconnaissent également un type de fonction `noexcept` fourni directement.
+
+La voie C++26 exclut explicitement les fonctions variadiques C, les fonctions
+`volatile` et celles qualifiées par référence, afin de conserver les limites
+de la voie C++23. La réflexion n'effectue aucune sélection dans un ensemble
+surchargé et ne déduit pas la signature d'une lambda générique.
+
+La sélection est protégée par le préprocesseur : la voie C++23 n'analyse aucune
+syntaxe de réflexion et ne charge pas `<meta>`. Sans définition explicite,
+`configuration.hpp` active la réflexion lorsque `__cpp_impl_reflection` et
+`__cpp_lib_reflection` valent au moins `202506L`. Une définition de
+`MINI_OPENMETHOD_REFLEXION` à 0 ou 1 force le choix ; 1 exige ces capacités.
+
+CMake propose `AUTO` par défaut, `ON` pour exiger la réflexion et `OFF` pour
+imposer les modèles. Sa sonde construit une véritable table de double dispatch
+avec la bibliothèque, d'abord sans option puis avec `-freflection` sous GCC ou
+Clang. L'échec de la sonde fait choisir C++23 en `AUTO`, mais arrête la
+configuration en `ON`. Le test porte sur la chaîne complète, pas sur sa version.
+Tous les fichiers d'un programme doivent employer le même réglage. La cible
+CMake propage ce choix, le standard minimum et les options, y compris installée ;
+un consommateur d'une installation ne refait pas cette sélection.
+
 ## Séparer les trois moments
 
 La signature de l'opération, les listes de types et les types des lambdas sont
@@ -20,7 +115,10 @@ donc pas « cacher » une ambiguïté simplement en ne faisant aucun appel.
 
 Pour un tuple de types dynamiques D et une spécialisation S, S est applicable
 si chaque type Dᵢ dérive publiquement et sans ambiguïté du paramètre Sᵢ, ou lui
-est identique. Cette relation est évaluée avec `std::derived_from`.
+est identique. La version C++23 utilise `std::derived_from` ; la version C++26
+combine `std::meta::is_base_of_type` et la convertibilité des pointeurs avec
+`std::meta::is_convertible_type`. Tester seulement l'héritage accepterait à tort
+des bases privées ou ambiguës.
 
 A domine B si Aᵢ dérive de Bᵢ pour chaque position et qu'au moins une position
 diffère. C'est un ordre partiel : certains candidats sont incomparables.
@@ -47,21 +145,74 @@ par division et modulo. Le runtime applique exactement la même numérotation.
 Les tests utilisent aussi une matrice 3 × 2 avec deux racines différentes :
 une matrice uniquement carrée pourrait masquer une erreur de diviseur.
 
-## Pourquoi RTTI et dynamic_cast ?
+## Identification dynamique et ajustement des références
 
 Les traits ne découvrent pas le type réel derrière une référence de base.
 Le prototype utilise `typeid` pour cette identification, puis exige une égalité
 exacte avec un type déclaré. Accepter silencieusement un descendant non listé
 invaliderait le caractère exhaustif de la vérification.
 
-Une conversion inverse par `static_cast` ne couvre pas les bases virtuelles.
-Le relais utilise `dynamic_cast`, qui ajuste les références dans les héritages
-multiples et virtuels autorisés par le contrat. Les conversions sont vérifiées
-au niveau des types pendant la résolution et réalisées sur les objets à l'appel.
+Après cette validation du type exact, le relais connaît une spécialisation
+applicable. Il emploie `static_cast` lorsque cette conversion est bien formée,
+y compris pour ajuster les décalages d'un héritage multiple non virtuel.
+Cette conversion est sûre ici parce que le domaine et la résolution prouvent
+l'existence d'un sous-objet cible public et non ambigu, et que l'indexation a
+vérifié le type dynamique avant tout ajustement.
+
+La conversion inverse depuis une base virtuelle ne permet pas `static_cast` :
+le relais conserve alors `dynamic_cast`. Le choix est fait par `if constexpr`
+pour chaque type de paramètre, sans branche supplémentaire à l'exécution.
+Cette optimisation est commune aux deux versions. La réflexion ne change pas
+le chemin d'appel ; les deux générateurs utilisent la même indexation.
 
 L'absence de candidat est une erreur de compilation. Le type inconnu est une
 erreur d'exécution distincte. Les exceptions des traitements utilisateur sont
 propagées ; elles ne sont pas transformées en erreurs du moteur.
+
+## Indexation et références préparées
+
+Pour au plus 8 types, une expression OU à court-circuit recherche la première
+adresse RTTI correspondante. Si aucune adresse ne correspond, une deuxième
+recherche utilise `std::type_info::operator==`. Comparer seulement les adresses
+ne suffirait pas : un même type peut avoir plusieurs objets RTTI.
+
+Sous GCC uniquement, `[[gnu::always_inline]]` maintient cette petite recherche
+visible dans l'appelant. Sans cette indication, GCC 16.2 produisait un dispatch
+sensiblement plus lent sur le banc à deux types. Clang et MSVC conservent leur
+choix d'inlining habituel. Le seuil de 8 types, le repli par égalité et le rejet
+des inconnus restent identiques. Les comparaisons d'algorithmes doivent mesurer
+l'appel complet en plus de la recherche isolée.
+
+Au-delà de 8 types, `traits_liste` construit au premier accès un `index_types`
+local statique constant, partagé par les méthodes utilisant la même liste.
+L'initialisation est synchronisée par C++ ; les recherches ultérieures ne
+modifient rien. Ce n'est pas un registre extensible. La table des spécialisations
+reste calculée à la compilation, tandis que cet index auxiliaire est construit
+à l'exécution car les adresses RTTI ne sont pas connues par `consteval`.
+
+Un hachage multiplicatif des adresses choisit une case dans un tableau de taille
+puissance de deux, au moins deux fois le nombre de types. Le sondage linéaire
+résout les collisions en vérifiant l'adresse exacte de chaque candidat. Une
+case vide déclenche le repli par égalité des types. Ainsi, une collision ou une
+adresse RTTI inconnue ne peut pas sélectionner arbitrairement une spécialisation.
+Le coût attendu est constant pour les adresses connues bien réparties ; les
+collisions et le repli gardent un pire cas linéaire. Les tableaux n'allouent pas.
+Le [banc d'indexation](performances.md#choix-du-seuil-dindexation) documente
+le choix du seuil ; celui-ci n'est pas un optimum universel.
+
+`methode::preparer<Position>(objet)` valide le type et construit une
+`reference_preparee<Base, Liste>` contenant un pointeur et un indice privé.
+L'appel préparé calcule directement la case de dispatch. Les ajustements
+d'héritage restent ceux de l'appel ordinaire, notamment le `dynamic_cast` vers
+une base virtuelle. La préparation n'appelle aucune spécialisation.
+
+Le constructeur est privé et les temporaires sont refusés. L'identité de la
+racine et l'ordre de la liste empêchent de transmettre un indice à une table
+incompatible. Une référence ne dépend pas des captures ni de l'adresse de la
+méthode : elle reste utilisable après déplacement de celle-ci et peut servir
+à une autre méthode compatible. L'objet référencé doit rester vivant à la même
+adresse et conserver son type dynamique ; le remplacer exige de préparer une
+nouvelle référence. Il n'y a ni possession ni vérification de durée de vie.
 
 ## Pourquoi les signatures explicites ?
 
@@ -90,15 +241,78 @@ Il ne serait pas honnête de lui promettre la même vérification exhaustive
 
 ## Stratégie de validation
 
+Les tests d'exécution utilisent doctest, avec un point d'entrée commun dans
+`lanceur_tests.cpp`. Chaque `TEST_CASE` porte un nom français et est découvert
+automatiquement par CTest sous le préfixe `unitaire/`. Les assertions `CHECK`
+et les contrôles d'exceptions remplacent les vérificateurs et compteurs maison ;
+les coordonnées des matrices sont jointes aux échecs pour les situer précisément.
+Les unités qui ne contiennent que des `static_assert` sont compilées dans le
+même exécutable. Le programme de détection et le consommateur de l'installation
+restent autonomes.
+
+Les tests des assistants incluent directement les nouveaux en-têtes, sans
+`methode.hpp`, et vérifient les signatures analysées et les contraintes des
+domaines. Des inclusions répétées contrôlent aussi leurs gardes d'inclusion.
+Le remplacement par Boost est couvert notamment par un membre sans argument
+(son objet implicite doit rester exclu), les fonctions `const noexcept`, les
+signatures variadiques ou qualifiées refusées et l'unicité de types avec leurs
+qualifications exactes.
+
 Les tests d'exécution couvrent le choix dynamique, les replis, l'indépendance
 de l'ordre, toute la matrice de dispatch, les types inconnus dans chaque position,
-les racines différentes, les diamants virtuels, les captures mobiles/mutables,
-les retours void et référence, et les exceptions.
+les racines différentes, les héritages multiples et virtuels, les bases
+intermédiaires privées ou ambiguës, les captures mobiles/mutables, les retours
+void et référence, et les exceptions. Le rejet des types inconnus est vérifié
+avant toute conversion vers une spécialisation.
+
+Les mêmes règles sont contrôlées avec des références préparées, y compris les
+retours, exceptions et captures après déplacement. Des assertions vérifient
+l'impossibilité de fabriquer un indice ou de mélanger des domaines incompatibles.
+`test_indexation.cpp` couvre les tailles 1, 2, 4, 5, 8, 9 et 32 et force toutes les
+adresses dans la même case pour tester collisions, retour à zéro et rejet des
+inconnus. Les temporaires et positions de préparation invalides ont des tests
+de compilation refusée avec leur diagnostic attendu.
+
+`test_resolution.cpp` compare les indices à des tables attendues : replis,
+matrice rectangulaire, permutation des fonctions, intersections, doublons,
+absence de candidat et héritages inaccessibles. En mode réflexion, il compare
+aussi directement les deux générateurs par `static_assert`.
+En mode réflexion, `test_grand_domaine.cpp` construit 256 spécialisations pour
+16 × 16 types et vérifie toutes les cases avec des appels ordinaires et préparés,
+ainsi que le rejet d'un descendant inconnu. Il compile sans augmentation des
+limites `constexpr`. Le script GCC l'exécute avec `ON` et `AUTO` ; le contrôle
+du mode attendu garantit que la sélection automatique exerce bien la réflexion.
+`test_detection.cpp` inclut les en-têtes sans hériter de la définition de mode
+de la cible CMake, pour contrôler leur propre sélection automatique.
 
 Les tests de compilation refusée contrôlent un fragment précis du diagnostic.
 Ils ne peuvent pas réussir simplement parce que l'en-tête est absent ou qu'une
 erreur de syntaxe empêche toute compilation. Les cas d'ambiguïté n'appellent pas
 la méthode, afin de vérifier que la construction suffit à valider le domaine.
 
-La CI fournit une matrice GCC, Clang et MSVC. Les vérifications fonctionnelles
-restent actives avec NDEBUG ; elles n'utilisent pas assert.
+La CI vérifie le repli `AUTO` avec GCC 13, Clang 18 et MSVC. Le conteneur GCC 16.2
+exécute la même suite dans les modes `OFF`, `ON` et `AUTO`, avec contrôle du
+choix attendu. Les refus des fonctions variadiques et des opérateurs qualifiés
+par référence sont conservés. Le script contrôle aussi qu'un choix explicite 0
+reste respecté lorsque le compilateur possède la réflexion activée.
+Les vérifications fonctionnelles doctest restent actives avec `NDEBUG`.
+Les [mesures de performance](performances.md) sont
+indicatives et n'imposent aucun seuil de temps aux tests.
+
+Lorsque `MINI_OPENMETHOD_COMPARAISON_BOOST=ON`, le test `equivalence_boost`
+vérifie six scénarios sur 4 096 entrées chacun, avec des résultats attendus
+calculés indépendamment du dispatch. Le mode `--verifier` ne chronomètre pas.
+Boost.OpenMethod est une dépendance du seul exécutable de comparaison, fournie
+par la fonctionnalité facultative `comparaison-boost` du manifeste vcpkg.
+Boost.CallableTraits et Boost.Mp11 sont des dépendances d'en-têtes obligatoires
+de la bibliothèque et de sa cible exportée. `find_dependency` les retrouve lors
+de la consommation d'une installation. La sonde de réflexion et les tests de
+compilation refusée reçoivent les mêmes dépendances que les cibles ordinaires.
+La CI et le conteneur les installent via le registre vcpkg fixé dans le manifeste.
+
+doctest est réservé à la fonctionnalité facultative `tests`, activée avant
+`project()` lorsque `MINI_OPENMETHOD_TESTS=ON`. Il est lié uniquement à
+l'exécutable de tests et n'apparaît pas dans les dépendances de la cible exportée.
+Les exemples, mesures et consommateurs de la bibliothèque n'en dépendent pas.
+La migration du lanceur modifie le travail de compilation des tests : les anciens
+temps de compilation du projet complet ne sont donc pas directement comparables.

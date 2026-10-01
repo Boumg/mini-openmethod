@@ -1,0 +1,10 @@
+Boost=1_92;reflexion=0;iterations=5000000;graine=42;passages=7
+Compilateur=MSVC 195136260
+NDEBUG=1;LTO=desactive;preparation=hors_chronometrage
+Cas;Types par position;Mini ns/appel;Mini prepare ns/appel;Boost reference ns/appel;Boost prepare ns/appel;Somme
+Simple;2;6.774;3.710;6.965;4.003;204096015
+Simple;8;3.613;6.074;11.261;5.348;260507012
+Simple;32;11.985;6.024;11.563;5.857;334635817
+Double;2;6.662;5.240;11.364;6.094;422713470
+Double;8;5.889;6.432;13.575;7.356;654752368
+Heritage virtuel;2;10.253;7.732;10.284;7.811;204096015

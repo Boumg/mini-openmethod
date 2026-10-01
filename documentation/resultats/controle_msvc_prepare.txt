@@ -1,0 +1,230 @@
+Controle des appels prepares sous MSVC 19.51.36260, Windows x64, Ryzen 9 9950X
+1er octobre 2026 ; Release /O2 /Ob2 /GL- ; Boost 1.92 via le meme vcpkg ; C++23 AUTO
+Paires=10 ; iterations=10000000 ; graine=42 ; sept passages par executable
+Chaque valeur est la mediane de sept passages avec rotation des quatre implementations.
+Ordre des executables : avant/apres pour les paires impaires, apres/avant pour les paires paires.
+Aucune compilation simultanee ; affinite et priorite Windows par defaut.
+Avant reconstitue avec les anciens resolution_cpp23.hpp, resolution_cpp26.hpp et index_types.hpp.
+Tous les autres sources et options sont identiques ; selection.hpp inutilise dans le temoin.
+La preparation et l initialisation restent hors chronometrage ; chaque somme est controlee.
+Les deux variantes ont passe les 22 tests avant chronometrage.
+Paire=1 ; variante=avant
+Boost=1_92;reflexion=0;iterations=10000000;graine=42;passages=7
+Compilateur=MSVC 195136260
+NDEBUG=1;LTO=desactive;preparation=hors_chronometrage
+Cas;Types par position;Mini ns/appel;Mini prepare ns/appel;Boost reference ns/appel;Boost prepare ns/appel;Somme
+Simple;2;7.206;3.997;7.705;4.333;408193680
+Simple;8;3.615;6.075;11.216;5.325;521014209
+Simple;32;12.322;6.014;11.691;5.940;669271121
+Double;2;6.580;5.276;11.414;6.086;845430312
+Double;8;5.830;6.216;13.436;7.267;1309504602
+Heritage virtuel;2;10.301;7.687;10.598;7.902;408193680
+Paire=1 ; variante=apres
+Boost=1_92;reflexion=0;iterations=10000000;graine=42;passages=7
+Compilateur=MSVC 195136260
+NDEBUG=1;LTO=desactive;preparation=hors_chronometrage
+Cas;Types par position;Mini ns/appel;Mini prepare ns/appel;Boost reference ns/appel;Boost prepare ns/appel;Somme
+Simple;2;6.796;3.703;6.994;3.995;408193680
+Simple;8;3.604;6.032;11.179;5.333;521014209
+Simple;32;12.387;6.068;11.608;5.875;669271121
+Double;2;6.675;5.571;11.380;6.404;845430312
+Double;8;5.832;6.189;13.415;7.250;1309504602
+Heritage virtuel;2;9.922;7.708;10.189;7.866;408193680
+Paire=2 ; variante=apres
+Boost=1_92;reflexion=0;iterations=10000000;graine=42;passages=7
+Compilateur=MSVC 195136260
+NDEBUG=1;LTO=desactive;preparation=hors_chronometrage
+Cas;Types par position;Mini ns/appel;Mini prepare ns/appel;Boost reference ns/appel;Boost prepare ns/appel;Somme
+Simple;2;6.809;3.672;6.980;4.014;408193680
+Simple;8;3.608;6.002;11.025;5.289;521014209
+Simple;32;11.996;6.441;12.157;5.855;669271121
+Double;2;6.661;5.583;11.450;6.418;845430312
+Double;8;5.837;6.268;13.441;7.284;1309504602
+Heritage virtuel;2;10.070;7.742;10.273;7.896;408193680
+Paire=2 ; variante=avant
+Boost=1_92;reflexion=0;iterations=10000000;graine=42;passages=7
+Compilateur=MSVC 195136260
+NDEBUG=1;LTO=desactive;preparation=hors_chronometrage
+Cas;Types par position;Mini ns/appel;Mini prepare ns/appel;Boost reference ns/appel;Boost prepare ns/appel;Somme
+Simple;2;6.803;3.683;6.960;3.989;408193680
+Simple;8;3.606;6.026;11.007;5.347;521014209
+Simple;32;12.517;6.063;11.928;6.060;669271121
+Double;2;6.498;5.603;11.464;6.467;845430312
+Double;8;5.832;6.264;13.437;7.320;1309504602
+Heritage virtuel;2;9.937;7.688;10.256;7.877;408193680
+Paire=3 ; variante=avant
+Boost=1_92;reflexion=0;iterations=10000000;graine=42;passages=7
+Compilateur=MSVC 195136260
+NDEBUG=1;LTO=desactive;preparation=hors_chronometrage
+Cas;Types par position;Mini ns/appel;Mini prepare ns/appel;Boost reference ns/appel;Boost prepare ns/appel;Somme
+Simple;2;6.824;3.676;6.976;4.009;408193680
+Simple;8;3.613;6.025;11.095;5.267;521014209
+Simple;32;12.455;6.442;12.148;6.291;669271121
+Double;2;6.566;5.592;11.415;6.382;845430312
+Double;8;5.878;6.260;13.441;7.328;1309504602
+Heritage virtuel;2;10.029;7.700;10.249;7.876;408193680
+Paire=3 ; variante=apres
+Boost=1_92;reflexion=0;iterations=10000000;graine=42;passages=7
+Compilateur=MSVC 195136260
+NDEBUG=1;LTO=desactive;preparation=hors_chronometrage
+Cas;Types par position;Mini ns/appel;Mini prepare ns/appel;Boost reference ns/appel;Boost prepare ns/appel;Somme
+Simple;2;6.829;3.727;7.004;4.027;408193680
+Simple;8;3.602;6.029;11.115;5.282;521014209
+Simple;32;11.923;6.150;11.884;5.875;669271121
+Double;2;6.662;5.586;11.406;6.398;845430312
+Double;8;5.821;6.285;13.453;7.263;1309504602
+Heritage virtuel;2;9.987;7.715;10.259;7.890;408193680
+Paire=4 ; variante=apres
+Boost=1_92;reflexion=0;iterations=10000000;graine=42;passages=7
+Compilateur=MSVC 195136260
+NDEBUG=1;LTO=desactive;preparation=hors_chronometrage
+Cas;Types par position;Mini ns/appel;Mini prepare ns/appel;Boost reference ns/appel;Boost prepare ns/appel;Somme
+Simple;2;6.775;3.717;6.987;4.000;408193680
+Simple;8;3.602;5.988;11.007;5.282;521014209
+Simple;32;12.474;6.385;12.165;6.290;669271121
+Double;2;6.714;5.557;11.414;6.394;845430312
+Double;8;5.828;6.332;13.470;8.876;1309504602
+Heritage virtuel;2;9.958;7.722;10.241;7.855;408193680
+Paire=4 ; variante=avant
+Boost=1_92;reflexion=0;iterations=10000000;graine=42;passages=7
+Compilateur=MSVC 195136260
+NDEBUG=1;LTO=desactive;preparation=hors_chronometrage
+Cas;Types par position;Mini ns/appel;Mini prepare ns/appel;Boost reference ns/appel;Boost prepare ns/appel;Somme
+Simple;2;6.780;3.718;6.953;3.982;408193680
+Simple;8;3.607;6.028;11.176;5.268;521014209
+Simple;32;12.243;5.971;11.676;5.910;669271121
+Double;2;6.791;5.267;11.988;6.397;845430312
+Double;8;5.813;6.238;13.384;7.242;1309504602
+Heritage virtuel;2;9.975;7.711;10.289;7.877;408193680
+Paire=5 ; variante=avant
+Boost=1_92;reflexion=0;iterations=10000000;graine=42;passages=7
+Compilateur=MSVC 195136260
+NDEBUG=1;LTO=desactive;preparation=hors_chronometrage
+Cas;Types par position;Mini ns/appel;Mini prepare ns/appel;Boost reference ns/appel;Boost prepare ns/appel;Somme
+Simple;2;6.815;3.689;6.984;3.994;408193680
+Simple;8;3.621;6.027;11.070;5.396;521014209
+Simple;32;12.400;6.388;12.198;5.924;669271121
+Double;2;6.549;5.284;11.376;6.282;845430312
+Double;8;5.866;6.246;13.509;7.264;1309504602
+Heritage virtuel;2;10.013;7.676;10.222;7.867;408193680
+Paire=5 ; variante=apres
+Boost=1_92;reflexion=0;iterations=10000000;graine=42;passages=7
+Compilateur=MSVC 195136260
+NDEBUG=1;LTO=desactive;preparation=hors_chronometrage
+Cas;Types par position;Mini ns/appel;Mini prepare ns/appel;Boost reference ns/appel;Boost prepare ns/appel;Somme
+Simple;2;6.783;3.711;6.973;3.993;408193680
+Simple;8;3.616;6.013;11.004;5.245;521014209
+Simple;32;12.055;6.059;12.145;5.856;669271121
+Double;2;6.622;5.608;11.438;6.420;845430312
+Double;8;5.889;6.322;13.446;7.307;1309504602
+Heritage virtuel;2;9.966;7.754;10.249;7.917;408193680
+Paire=6 ; variante=apres
+Boost=1_92;reflexion=0;iterations=10000000;graine=42;passages=7
+Compilateur=MSVC 195136260
+NDEBUG=1;LTO=desactive;preparation=hors_chronometrage
+Cas;Types par position;Mini ns/appel;Mini prepare ns/appel;Boost reference ns/appel;Boost prepare ns/appel;Somme
+Simple;2;6.774;3.660;6.972;3.999;408193680
+Simple;8;3.607;6.050;10.993;5.245;521014209
+Simple;32;11.737;6.031;11.740;5.850;669271121
+Double;2;6.594;5.590;11.441;6.485;845430312
+Double;8;5.845;6.234;13.435;7.264;1309504602
+Heritage virtuel;2;10.032;7.699;10.181;7.850;408193680
+Paire=6 ; variante=avant
+Boost=1_92;reflexion=0;iterations=10000000;graine=42;passages=7
+Compilateur=MSVC 195136260
+NDEBUG=1;LTO=desactive;preparation=hors_chronometrage
+Cas;Types par position;Mini ns/appel;Mini prepare ns/appel;Boost reference ns/appel;Boost prepare ns/appel;Somme
+Simple;2;6.753;3.674;6.965;3.981;408193680
+Simple;8;3.601;6.010;10.982;5.265;521014209
+Simple;32;12.453;6.378;12.192;6.277;669271121
+Double;2;6.621;5.610;11.400;6.386;845430312
+Double;8;5.849;6.170;13.374;7.310;1309504602
+Heritage virtuel;2;9.984;7.742;10.213;7.867;408193680
+Paire=7 ; variante=avant
+Boost=1_92;reflexion=0;iterations=10000000;graine=42;passages=7
+Compilateur=MSVC 195136260
+NDEBUG=1;LTO=desactive;preparation=hors_chronometrage
+Cas;Types par position;Mini ns/appel;Mini prepare ns/appel;Boost reference ns/appel;Boost prepare ns/appel;Somme
+Simple;2;6.821;3.716;6.997;4.039;408193680
+Simple;8;3.620;6.049;11.061;5.327;521014209
+Simple;32;12.231;6.013;11.571;5.863;669271121
+Double;2;6.468;5.588;11.399;6.339;845430312
+Double;8;5.800;6.255;13.410;7.297;1309504602
+Heritage virtuel;2;10.237;7.739;10.305;7.867;408193680
+Paire=7 ; variante=apres
+Boost=1_92;reflexion=0;iterations=10000000;graine=42;passages=7
+Compilateur=MSVC 195136260
+NDEBUG=1;LTO=desactive;preparation=hors_chronometrage
+Cas;Types par position;Mini ns/appel;Mini prepare ns/appel;Boost reference ns/appel;Boost prepare ns/appel;Somme
+Simple;2;6.801;3.709;6.997;4.007;408193680
+Simple;8;3.595;6.037;10.967;5.270;521014209
+Simple;32;11.805;6.010;12.131;5.868;669271121
+Double;2;6.560;5.545;11.383;6.359;845430312
+Double;8;5.816;6.294;13.432;7.250;1309504602
+Heritage virtuel;2;9.895;7.708;10.218;7.872;408193680
+Paire=8 ; variante=apres
+Boost=1_92;reflexion=0;iterations=10000000;graine=42;passages=7
+Compilateur=MSVC 195136260
+NDEBUG=1;LTO=desactive;preparation=hors_chronometrage
+Cas;Types par position;Mini ns/appel;Mini prepare ns/appel;Boost reference ns/appel;Boost prepare ns/appel;Somme
+Simple;2;6.753;3.669;6.963;3.975;408193680
+Simple;8;3.598;6.020;10.992;5.312;521014209
+Simple;32;11.797;5.968;11.597;5.852;669271121
+Double;2;6.471;5.595;11.434;6.384;845430312
+Double;8;5.876;6.293;13.420;7.326;1309504602
+Heritage virtuel;2;10.035;7.710;10.198;7.852;408193680
+Paire=8 ; variante=avant
+Boost=1_92;reflexion=0;iterations=10000000;graine=42;passages=7
+Compilateur=MSVC 195136260
+NDEBUG=1;LTO=desactive;preparation=hors_chronometrage
+Cas;Types par position;Mini ns/appel;Mini prepare ns/appel;Boost reference ns/appel;Boost prepare ns/appel;Somme
+Simple;2;6.749;3.697;6.951;4.011;408193680
+Simple;8;3.595;6.013;10.966;5.239;521014209
+Simple;32;12.163;5.979;11.681;5.936;669271121
+Double;2;6.577;5.570;11.405;6.085;845430312
+Double;8;5.856;6.185;13.437;7.250;1309504602
+Heritage virtuel;2;9.933;7.652;10.190;7.850;408193680
+Paire=9 ; variante=avant
+Boost=1_92;reflexion=0;iterations=10000000;graine=42;passages=7
+Compilateur=MSVC 195136260
+NDEBUG=1;LTO=desactive;preparation=hors_chronometrage
+Cas;Types par position;Mini ns/appel;Mini prepare ns/appel;Boost reference ns/appel;Boost prepare ns/appel;Somme
+Simple;2;7.060;3.690;7.121;3.984;408193680
+Simple;8;3.602;6.039;10.999;5.271;521014209
+Simple;32;12.423;6.366;12.093;6.279;669271121
+Double;2;6.719;5.588;11.415;6.379;845430312
+Double;8;5.834;6.306;13.551;7.388;1309504602
+Heritage virtuel;2;10.312;7.707;10.634;7.915;408193680
+Paire=9 ; variante=apres
+Boost=1_92;reflexion=0;iterations=10000000;graine=42;passages=7
+Compilateur=MSVC 195136260
+NDEBUG=1;LTO=desactive;preparation=hors_chronometrage
+Cas;Types par position;Mini ns/appel;Mini prepare ns/appel;Boost reference ns/appel;Boost prepare ns/appel;Somme
+Simple;2;6.767;3.732;6.996;4.029;408193680
+Simple;8;3.612;6.000;10.996;5.344;521014209
+Simple;32;11.793;5.933;11.597;5.841;669271121
+Double;2;6.664;5.259;11.383;6.185;845430312
+Double;8;5.853;6.258;13.406;7.315;1309504602
+Heritage virtuel;2;9.934;7.702;10.221;7.880;408193680
+Paire=10 ; variante=apres
+Boost=1_92;reflexion=0;iterations=10000000;graine=42;passages=7
+Compilateur=MSVC 195136260
+NDEBUG=1;LTO=desactive;preparation=hors_chronometrage
+Cas;Types par position;Mini ns/appel;Mini prepare ns/appel;Boost reference ns/appel;Boost prepare ns/appel;Somme
+Simple;2;6.762;3.665;6.952;3.986;408193680
+Simple;8;3.595;6.015;10.984;5.296;521014209
+Simple;32;11.779;5.890;11.648;5.846;669271121
+Double;2;6.359;5.201;11.361;6.073;845430312
+Double;8;5.848;6.187;13.533;7.288;1309504602
+Heritage virtuel;2;9.913;7.712;10.200;7.854;408193680
+Paire=10 ; variante=avant
+Boost=1_92;reflexion=0;iterations=10000000;graine=42;passages=7
+Compilateur=MSVC 195136260
+NDEBUG=1;LTO=desactive;preparation=hors_chronometrage
+Cas;Types par position;Mini ns/appel;Mini prepare ns/appel;Boost reference ns/appel;Boost prepare ns/appel;Somme
+Simple;2;6.795;3.663;6.974;4.034;408193680
+Simple;8;3.608;6.077;11.099;5.294;521014209
+Simple;32;12.529;6.434;12.177;6.301;669271121
+Double;2;6.444;5.561;11.425;6.385;845430312
+Double;8;5.841;6.260;13.570;7.255;1309504602
+Heritage virtuel;2;10.008;7.657;10.236;7.861;408193680

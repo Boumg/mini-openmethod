@@ -1,0 +1,10 @@
+Boost=1_92;reflexion=0;iterations=5000000;graine=42;passages=7
+Compilateur=Clang 23.1.2 (https://github.com/llvm/llvm-project 85ac560262434c9ccfc0c183ec22d4138ed647fb)
+NDEBUG=1;LTO=desactive;preparation=hors_chronometrage
+Cas;Types par position;Mini ns/appel;Mini prepare ns/appel;Boost reference ns/appel;Boost prepare ns/appel;Somme
+Simple;2;1.283;0.305;7.078;3.643;204096015
+Simple;8;2.418;0.296;11.021;5.124;260507012
+Simple;32;11.100;6.593;11.580;6.054;334635817
+Double;2;4.149;0.462;11.310;5.825;422713470
+Double;8;6.501;6.730;13.491;7.222;654752368
+Heritage virtuel;2;9.060;4.248;10.354;7.303;204096015
