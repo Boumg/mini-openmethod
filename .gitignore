@@ -1,5 +1,6 @@
 /build*/
 /installation/
+/vcpkg_installed/
 /.cache/
 /.vs/
 /CMakeUserPresets.json

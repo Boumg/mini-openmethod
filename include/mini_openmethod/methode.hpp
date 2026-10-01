@@ -1,9 +1,12 @@
 #pragma once
+#include <mini_openmethod/detail/resolution.hpp>
+#include <mini_openmethod/detail/traits.hpp>
+#include <mini_openmethod/domaines.hpp>
+#include <mini_openmethod/reference_preparee.hpp>
 #include <array>
 #include <concepts>
 #include <cstddef>
 #include <functional>
-#include <stdexcept>
 #include <tuple>
 #include <type_traits>
 #include <typeinfo>
@@ -11,79 +14,6 @@
 
 /** @file Dispatch dynamique externe avec validation d'un domaine ferme. */
 namespace mini_openmethod {
-/** Types dynamiques exacts autorises pour une position. */
-template<class... Types> struct liste_types {};
-/** Un domaine par argument, dans l'ordre de la signature. */
-template<class... Listes> struct domaines {};
-/** Un type dynamique absent du domaine est toujours refuse. */
-class type_inconnu : public std::runtime_error {
-public:
-    type_inconnu() : std::runtime_error("Type dynamique absent du domaine ferme") {}
-};
-
-namespace detail {
-template<class Fonction, class = void> struct traits_fonction {};
-template<class Retour, class... Arguments>
-struct traits_fonction<Retour(Arguments...), void> {
-    using retour = Retour;
-    using arguments = std::tuple<Arguments...>;
-    static constexpr std::size_t arite = sizeof...(Arguments);
-};
-template<class Retour, class... Arguments>
-struct traits_fonction<Retour (*)(Arguments...), void>
-    : traits_fonction<Retour(Arguments...)> {};
-template<class Retour, class... Arguments>
-struct traits_fonction<Retour (*)(Arguments...) noexcept, void>
-    : traits_fonction<Retour(Arguments...)> {};
-template<class Classe, class Retour, class... Arguments>
-struct traits_fonction<Retour (Classe::*)(Arguments...), void>
-    : traits_fonction<Retour(Arguments...)> {};
-template<class Classe, class Retour, class... Arguments>
-struct traits_fonction<Retour (Classe::*)(Arguments...) const, void>
-    : traits_fonction<Retour(Arguments...)> {};
-template<class Classe, class Retour, class... Arguments>
-struct traits_fonction<Retour (Classe::*)(Arguments...) noexcept, void>
-    : traits_fonction<Retour(Arguments...)> {};
-template<class Classe, class Retour, class... Arguments>
-struct traits_fonction<Retour (Classe::*)(Arguments...) const noexcept, void>
-    : traits_fonction<Retour(Arguments...)> {};
-template<class Fonction>
-struct traits_fonction<Fonction, std::void_t<decltype(&Fonction::operator())>>
-    : traits_fonction<decltype(&Fonction::operator())> {};
-template<class Type>
-concept reference_constante = std::is_lvalue_reference_v<Type>
-    && std::is_const_v<std::remove_reference_t<Type>>
-    && !std::is_volatile_v<std::remove_reference_t<Type>>
-    && std::is_class_v<std::remove_cvref_t<Type>>;
-template<class Fonction>
-concept fonction_analysee = requires {
-    typename traits_fonction<Fonction>::retour;
-    typename traits_fonction<Fonction>::arguments;
-};
-template<class... Types> struct types_uniques : std::true_type {};
-template<class Premier, class... Suite>
-struct types_uniques<Premier, Suite...>
-    : std::bool_constant<(!std::same_as<Premier, Suite> && ...)
-                         && types_uniques<Suite...>::value> {};
-template<class Liste> struct traits_liste;
-template<class... Types>
-struct traits_liste<liste_types<Types...>> {
-    using tuple = std::tuple<Types...>;
-    static constexpr std::size_t taille = sizeof...(Types);
-    template<class Base>
-    static constexpr bool valide = sizeof...(Types) > 0
-        && types_uniques<Types...>::value
-        && (std::same_as<Types, std::remove_cvref_t<Types>> && ...)
-        && (std::derived_from<Types, Base> && ...);
-    static std::size_t indice(const std::type_info& type) {
-        const std::array<bool, sizeof...(Types)> correspondances{(type == typeid(Types))...};
-        for (std::size_t indice = 0; indice < correspondances.size(); ++indice)
-            if (correspondances[indice]) return indice;
-        throw type_inconnu{};
-    }
-};
-} // namespace detail
-
 template<class Signature, class Domaines, class... Fonctions> class methode;
 /**
  * Methode externe validee pour toutes les combinaisons du domaine.
@@ -137,84 +67,52 @@ class methode<Retour(Arguments...), domaines<Listes...>, Fonctions...> {
                   "Specialisation invalide : arite, retour exact et references constantes derives requis");
     static constexpr std::array<std::size_t, arite> dimensions{detail::traits_liste<Listes>::taille...};
     static constexpr std::size_t nombre_cases = (detail::traits_liste<Listes>::taille * ...);
-    // En double dispatch : ligne * nombre de colonnes + colonne.
-    template<std::size_t Case, std::size_t Position>
-    static consteval std::size_t coordonnee() {
-        std::size_t diviseur = 1;
-        for (std::size_t suivante = Position + 1; suivante < arite; ++suivante)
-            diviseur *= dimensions[suivante];
-        return (Case / diviseur) % dimensions[Position];
+    static constexpr auto resolution = detail::resolution<domaines<Listes...>, tuple_fonctions>::indices;
+
+    /** Le type exact a deja ete valide par l'indexation RTTI avant cet ajustement. */
+    template<class Cible, class Base>
+    static Cible ajuster_argument(const Base& argument) {
+        if constexpr (requires { static_cast<Cible>(argument); })
+            return static_cast<Cible>(argument);
+        else
+            return dynamic_cast<Cible>(argument);
     }
-    template<std::size_t Case, std::size_t Fonction, std::size_t... Positions>
-    static consteval bool applicable(std::index_sequence<Positions...>) {
-        return (std::derived_from<
-            std::tuple_element_t<coordonnee<Case, Positions>(), typename liste<Positions>::tuple>,
-            std::remove_cvref_t<argument_fonction<Fonction, Positions>>> && ...);
-    }
-    // Ordre produit : au moins aussi specialise partout, strictement quelque part.
-    template<std::size_t Gauche, std::size_t Droite, std::size_t... Positions>
-    static consteval bool domine(std::index_sequence<Positions...>) {
-        return (std::derived_from<std::remove_cvref_t<argument_fonction<Gauche, Positions>>,
-                                 std::remove_cvref_t<argument_fonction<Droite, Positions>>> && ...)
-            && (!std::same_as<argument_fonction<Gauche, Positions>,
-                             argument_fonction<Droite, Positions>> || ...);
-    }
-    template<std::size_t Gauche, std::size_t... Droites>
-    static consteval auto ligne_dominance(std::index_sequence<Droites...>) {
-        return std::array<bool, nombre_fonctions>{domine<Gauche, Droites>(positions{})...};
-    }
-    template<std::size_t... Gauches>
-    static consteval auto creer_dominance(std::index_sequence<Gauches...> indices) {
-        return std::array<std::array<bool, nombre_fonctions>, nombre_fonctions>{ligne_dominance<Gauches>(indices)...};
-    }
-    static constexpr auto dominance = creer_dominance(std::make_index_sequence<nombre_fonctions>{});
-    template<std::size_t Case, std::size_t... Indices>
-    static consteval std::size_t resoudre(std::index_sequence<Indices...>) {
-        constexpr std::array<bool, nombre_fonctions> candidats{applicable<Case, Indices>(positions{})...};
-        std::size_t gagnant = nombre_fonctions;
-        std::size_t maximaux = 0;
-        for (std::size_t candidat = 0; candidat < nombre_fonctions; ++candidat) {
-            if (!candidats[candidat]) continue;
-            bool domine_par_autre = false;
-            for (std::size_t autre = 0; autre < nombre_fonctions; ++autre)
-                domine_par_autre = domine_par_autre || (candidats[autre] && dominance[autre][candidat]);
-            if (!domine_par_autre) { gagnant = candidat; ++maximaux; }
-        }
-        return maximaux > 1 ? nombre_fonctions + 1 : gagnant;
-    }
-    template<std::size_t Case>
-    static consteval std::size_t resoudre_verifie() {
-        constexpr auto resultat = resoudre<Case>(std::make_index_sequence<nombre_fonctions>{});
-        static_assert(resultat != nombre_fonctions, "Combinaison sans specialisation applicable");
-        static_assert(resultat != nombre_fonctions + 1, "Ambiguite : plusieurs specialisations maximales");
-        return resultat;
-    }
-    template<std::size_t... Cases>
-    static consteval auto creer_resolution(std::index_sequence<Cases...>) {
-        return std::array<std::size_t, nombre_cases>{resoudre_verifie<Cases>()...};
-    }
-    static constexpr auto resolution = creer_resolution(std::make_index_sequence<nombre_cases>{});
     template<std::size_t Fonction, std::size_t... Positions>
     Retour invoquer(std::index_sequence<Positions...>, Arguments... arguments) {
-        // Ajuste aussi les pointeurs dans les heritages multiples et virtuels.
+        // Conversion statique lorsque possible, RTTI pour les bases virtuelles.
         return std::invoke(std::get<Fonction>(fonctions_),
-            dynamic_cast<argument_fonction<Fonction, Positions>>(arguments)...);
+            ajuster_argument<argument_fonction<Fonction, Positions>>(arguments)...);
     }
     template<std::size_t Fonction>
     static Retour relais(methode& operation, Arguments... arguments) {
         return operation.template invoquer<Fonction>(positions{}, arguments...);
     }
     using pointeur_relais = Retour (*)(methode&, Arguments...);
+    template<std::size_t Case>
+    static consteval pointeur_relais choisir_relais() {
+        constexpr auto gagnant = resolution[Case];
+        static_assert(gagnant != nombre_fonctions, "Combinaison sans specialisation applicable");
+        static_assert(gagnant != nombre_fonctions + 1, "Ambiguite : plusieurs specialisations maximales");
+        if constexpr (gagnant < nombre_fonctions) return &relais<gagnant>;
+        else return nullptr;
+    }
     template<std::size_t... Cases>
     static consteval auto creer_table(std::index_sequence<Cases...>) {
-        return std::array<pointeur_relais, nombre_cases>{&relais<resolution[Cases]>...};
+        return std::array<pointeur_relais, nombre_cases>{choisir_relais<Cases>()...};
     }
     static constexpr auto table = creer_table(std::make_index_sequence<nombre_cases>{});
     tuple_fonctions fonctions_;
+
+    Retour appeler_indices(const std::array<std::size_t, arite>& indices, Arguments... arguments) {
+        std::size_t case_table = 0;
+        for (std::size_t position = 0; position < arite; ++position)
+            case_table = case_table * dimensions[position] + indices[position];
+        return table[case_table](*this, arguments...);
+    }
 public:
     /** Force la validation, meme si la methode n'est jamais appelee. */
     explicit constexpr methode(Fonctions... fonctions) : fonctions_(std::move(fonctions)...) {
-        static_assert(resolution.size() == nombre_cases);
+        static_assert(table.size() == nombre_cases);
     }
     /**
      * Appelle la specialisation correspondant aux types dynamiques exacts.
@@ -223,10 +121,31 @@ public:
      */
     Retour operator()(Arguments... arguments) {
         const std::array<std::size_t, arite> indices{detail::traits_liste<Listes>::indice(typeid(arguments))...};
-        std::size_t case_table = 0;
-        for (std::size_t position = 0; position < arite; ++position)
-            case_table = case_table * dimensions[position] + indices[position];
-        return table[case_table](*this, arguments...);
+        return appeler_indices(indices, arguments...);
+    }
+    /**
+     * Valide le type une fois et memorise son indice pour les appels repetes.
+     * @tparam Position Position dans la signature, a partir de zero (zero par defaut).
+     * @throws type_inconnu Si le type exact est absent du domaine de cette position.
+     * Les temporaires sont refuses pour eviter une reference immediatement pendante.
+     */
+    template<std::size_t Position = 0, class Objet>
+    [[nodiscard]] auto preparer(Objet&& objet) const {
+        static_assert(Position < arite, "Position de preparation hors de la signature");
+        static_assert(std::is_lvalue_reference_v<Objet>, "La preparation exige un objet persistant, pas un temporaire");
+        if constexpr (Position < arite && std::is_lvalue_reference_v<Objet>) {
+            using Base = std::remove_cvref_t<std::tuple_element_t<Position, tuple_arguments>>;
+            constexpr bool compatible = std::is_convertible_v<std::remove_reference_t<Objet>*, const Base*>;
+            static_assert(compatible, "Objet incompatible avec la racine de cette position");
+            if constexpr (compatible) {
+                using Domaine = std::tuple_element_t<Position, tuple_listes>;
+                return reference_preparee<Base, Domaine>(objet, liste<Position>::indice(typeid(objet)));
+            }
+        }
+    }
+    /** Appel sans nouvelle identification RTTI ; chaque reference doit rester valide. */
+    Retour operator()(const reference_preparee<std::remove_cvref_t<Arguments>, Listes>&... arguments) {
+        return appeler_indices({arguments.indice_...}, *arguments.objet_...);
     }
 };
 /** Deduit les signatures explicites des lambdas et conserve celles-ci par valeur. */

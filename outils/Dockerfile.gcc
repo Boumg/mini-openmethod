@@ -1,0 +1,13 @@
+# Chaine reproductible pour valider et comparer les deux implementations.
+FROM gcc:16.2
+RUN apt-get update -qq \
+    && apt-get install -y -qq cmake ninja-build time git curl zip unzip tar pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+ARG VCPKG_REVISION=eb2d3a3279fd019cb7733072d86900d0ad2a1aef
+RUN git init /opt/vcpkg \
+    && git -C /opt/vcpkg remote add origin https://github.com/microsoft/vcpkg.git \
+    && git -C /opt/vcpkg fetch --depth 1 origin ${VCPKG_REVISION} \
+    && git -C /opt/vcpkg checkout --detach FETCH_HEAD \
+    && /opt/vcpkg/bootstrap-vcpkg.sh -disableMetrics
+ENV VCPKG_ROOT=/opt/vcpkg
+WORKDIR /sources

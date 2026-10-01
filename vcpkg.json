@@ -1,0 +1,22 @@
+{
+  "name": "mini-openmethod",
+  "version": "0.1.0",
+  "description": "Methodes externes C++23 avec les traits Boost et comparaison facultative avec Boost.OpenMethod",
+  "builtin-baseline": "eb2d3a3279fd019cb7733072d86900d0ad2a1aef",
+  "dependencies": [
+    { "name": "boost-callable-traits", "version>=": "1.92.0" },
+    { "name": "boost-mp11", "version>=": "1.92.0" }
+  ],
+  "features": {
+    "tests": {
+      "description": "Executer les tests unitaires avec doctest",
+      "dependencies": [ "doctest" ]
+    },
+    "comparaison-boost": {
+      "description": "Comparer le dispatch avec Boost.OpenMethod",
+      "dependencies": [
+        { "name": "boost-openmethod", "version>=": "1.92.0" }
+      ]
+    }
+  }
+}

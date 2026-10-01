@@ -1,8 +1,28 @@
-name: Validation C++23
+name: Validation C++23 et reflexion C++26
 on: [push, pull_request, workflow_dispatch]
 permissions:
   contents: read
 jobs:
+  comparer_boost:
+    name: Equivalence avec Boost.OpenMethod / vcpkg
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Recuperer les sources
+        uses: actions/checkout@v4
+      - name: Recuperer la version de vcpkg du manifeste
+        uses: actions/checkout@v4
+        with:
+          repository: microsoft/vcpkg
+          ref: eb2d3a3279fd019cb7733072d86900d0ad2a1aef
+          path: build-vcpkg
+      - name: Preparer vcpkg
+        run: ./build-vcpkg/bootstrap-vcpkg.sh -disableMetrics
+      - name: Configurer avec Boost
+        run: cmake -S . -B build-boost -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=g++-13 -DCMAKE_TOOLCHAIN_FILE=$PWD/build-vcpkg/scripts/buildsystems/vcpkg.cmake -DMINI_OPENMETHOD_COMPARAISON_BOOST=ON
+      - name: Compiler
+        run: cmake --build build-boost --parallel 2
+      - name: Verifier les resultats sans seuil temporel
+        run: ctest --test-dir build-boost --output-on-failure --parallel 2
   verifier:
     name: ${{ matrix.nom }}
     strategy:
@@ -22,15 +42,62 @@ jobs:
     steps:
       - name: Recuperer les sources
         uses: actions/checkout@v4
+      - name: Recuperer la version de vcpkg du manifeste
+        uses: actions/checkout@v4
+        with:
+          repository: microsoft/vcpkg
+          ref: eb2d3a3279fd019cb7733072d86900d0ad2a1aef
+          path: build-vcpkg
+      - name: Preparer vcpkg sous Linux
+        if: runner.os == 'Linux'
+        run: ./build-vcpkg/bootstrap-vcpkg.sh -disableMetrics
+      - name: Preparer vcpkg sous Windows
+        if: runner.os == 'Windows'
+        run: ./build-vcpkg/bootstrap-vcpkg.bat -disableMetrics
       - name: Configurer sous Linux
         if: runner.os == 'Linux'
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=${{ matrix.compilateur }}
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=${{ matrix.compilateur }} -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/build-vcpkg/scripts/buildsystems/vcpkg.cmake -DMINI_OPENMETHOD_REFLEXION=AUTO -DMINI_OPENMETHOD_REFLEXION_ATTENDUE=0
       - name: Configurer sous Windows
         if: runner.os == 'Windows'
-        run: cmake -S . -B build -A x64
+        run: cmake -S . -B build -A x64 -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/build-vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=x64-windows -DMINI_OPENMETHOD_REFLEXION=AUTO -DMINI_OPENMETHOD_REFLEXION_ATTENDUE=0
       - name: Compiler
         run: cmake --build build --config Release --parallel 2
       - name: Verifier les comportements et les refus de compilation
         run: ctest --test-dir build -C Release --output-on-failure
       - name: Verifier l'installation
         run: cmake --install build --config Release --prefix installation
+      - name: Configurer un consommateur sous Linux
+        if: runner.os == 'Linux'
+        run: cmake -S tests/installation -B build-consommateur -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=${{ matrix.compilateur }} -DCMAKE_PREFIX_PATH="${{ github.workspace }}/installation;${{ github.workspace }}/build/vcpkg_installed/x64-linux" -DMINI_OPENMETHOD_REFLEXION_ATTENDUE=0
+      - name: Configurer un consommateur sous Windows
+        if: runner.os == 'Windows'
+        run: cmake -S tests/installation -B build-consommateur -A x64 -DCMAKE_PREFIX_PATH="${{ github.workspace }}/installation;${{ github.workspace }}/build/vcpkg_installed/x64-windows" -DMINI_OPENMETHOD_REFLEXION_ATTENDUE=0
+      - name: Verifier le consommateur de l'installation
+        run: |
+          cmake --build build-consommateur --config Release
+          ctest --test-dir build-consommateur -C Release --output-on-failure
+  verifier_reflexion:
+    name: GCC 16.2 / C++23, C++26 et selection automatique
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Recuperer les sources
+        uses: actions/checkout@v4
+      - name: Construire la chaine reproductible
+        run: docker build -f outils/Dockerfile.gcc -t mini-openmethod-gcc:16.2 outils
+      - name: Verifier les trois selections et mesurer le dispatch
+        run: |
+          mkdir -p build-gcc
+          docker run --rm --mount "type=bind,source=$PWD,target=/sources,readonly" \
+            --mount "type=bind,source=$PWD/build-gcc,target=/resultats" \
+            mini-openmethod-gcc:16.2 bash /sources/outils/verifier-gcc.sh
+      - name: Conserver les resultats
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-gcc
+          path: |
+            build-gcc/*/configuration.log
+            build-gcc/*/tests.log
+            build-gcc/*/installation.log
+            build-gcc/*/compilation.txt
+            build-gcc/*/mesures.txt

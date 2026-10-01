@@ -1,0 +1,8 @@
+Compilateur=MSVC 195136260
+iterations=5000000;graine=42;passages=7;LTO=desactive;initialisation=hors_chronometrage
+Types;Lineaire ns/recherche;Hachage ns/recherche;Somme
+2;2.177;1.471;2500018
+4;1.457;1.489;7499983
+8;1.576;1.627;17500020
+16;3.118;3.523;37500012
+32;3.930;2.491;77499726
