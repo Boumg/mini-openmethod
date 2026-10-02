@@ -25,7 +25,7 @@ find_package(Boost 1.92 CONFIG REQUIRED COMPONENTS callable_traits mp11)
 target_link_libraries(mini_openmethod INTERFACE Boost::callable_traits Boost::mp11)
 
 include(cmake/choisir_implementation.cmake)
-configurer_implementation(mini_openmethod)
+configurer_implementation(mini_openmethod "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
 option(MINI_OPENMETHOD_EXEMPLES "Compiler les exemples progressifs" ${PROJECT_IS_TOP_LEVEL})
 option(MINI_OPENMETHOD_MESURES "Compiler la mesure comparative du dispatch" OFF)
@@ -106,4 +106,5 @@ write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/mini_openmethodConf
     VERSION ${PROJECT_VERSION} COMPATIBILITY SameMajorVersion)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/mini_openmethodConfig.cmake
     ${CMAKE_CURRENT_BINARY_DIR}/mini_openmethodConfigVersion.cmake
+    cmake/choisir_implementation.cmake
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/mini_openmethod)

@@ -225,8 +225,13 @@ avec la bibliothèque, d'abord sans option puis avec `-freflection` sous GCC ou
 Clang. L'échec de la sonde fait choisir C++23 en `AUTO`, mais arrête la
 configuration en `ON`. Le test porte sur la chaîne complète, pas sur sa version.
 Tous les fichiers d'un programme doivent employer le même réglage. La cible
-CMake propage ce choix, le standard minimum et les options, y compris installée ;
-un consommateur d'une installation ne refait pas cette sélection.
+CMake propage ce choix, le standard minimum et les options. L'export installé
+conserve uniquement le socle C++23, les en-têtes et les dépendances Boost.
+Au premier `find_package`, le module de sélection installé refait la sonde avec
+les en-têtes du paquet et la chaîne du consommateur, puis configure la cible
+importée selon son propre `AUTO`, `ON` ou `OFF`. Le choix du producteur n'est
+donc pas exporté. Les recherches suivantes réutilisent la cible sans ajouter
+de définitions ni d'options ; changer le mode demande une reconfiguration CMake.
 
 ## Séparer les trois moments
 
@@ -446,6 +451,10 @@ choix attendu. Les refus des fonctions variadiques et des opérateurs qualifiés
 par référence sont conservés. Le script contrôle aussi qu'un choix explicite 0
 reste respecté lorsque le compilateur possède la réflexion activée.
 Les vérifications fonctionnelles doctest restent actives avec `NDEBUG`.
+Pour chaque installation GCC, le consommateur passe successivement par `OFF`,
+`ON`, `AUTO`, puis `OFF` dans le même répertoire de construction. La CI consomme
+aussi le paquet produit avec réflexion sous GCC 16.2 depuis GCC 13 en `AUTO`
+et `OFF`, afin de vérifier la portabilité de l'export entre compilateurs.
 Les [mesures de performance](performances.md) sont
 indicatives et n'imposent aucun seuil de temps aux tests.
 

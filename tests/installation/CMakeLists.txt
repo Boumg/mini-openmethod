@@ -1,6 +1,18 @@
 cmake_minimum_required(VERSION 3.25)
 project(verifier_installation LANGUAGES CXX)
 find_package(mini_openmethod CONFIG REQUIRED)
+# Plusieurs dependances peuvent rechercher le meme paquet : ne pas empiler les options.
+set(proprietes INTERFACE_COMPILE_FEATURES INTERFACE_COMPILE_DEFINITIONS INTERFACE_COMPILE_OPTIONS)
+foreach(propriete IN LISTS proprietes)
+    get_property(avant_${propriete} TARGET mini_openmethod::mini_openmethod PROPERTY ${propriete})
+endforeach()
+find_package(mini_openmethod CONFIG REQUIRED)
+foreach(propriete IN LISTS proprietes)
+    get_property(apres TARGET mini_openmethod::mini_openmethod PROPERTY ${propriete})
+    if(NOT "${avant_${propriete}}" STREQUAL "${apres}")
+        message(FATAL_ERROR "Une seconde recherche du paquet modifie ${propriete}")
+    endif()
+endforeach()
 add_executable(verifier_installation ../test_detection.cpp)
 target_link_libraries(verifier_installation PRIVATE mini_openmethod::mini_openmethod)
 target_compile_definitions(verifier_installation PRIVATE

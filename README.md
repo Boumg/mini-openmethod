@@ -466,6 +466,10 @@ cmake --install build --config Release --prefix installation
 
 Le consommateur peut ensuite utiliser `find_package(mini_openmethod CONFIG REQUIRED)`
 et la même cible, avec `CMAKE_PREFIX_PATH` pointant vers l'installation.
+La sélection `AUTO`, `ON` ou `OFF` est refaite avec son compilateur et sa
+bibliothèque standard, indépendamment du mode employé pour produire le paquet.
+Passer `-DMINI_OPENMETHOD_REFLEXION=OFF` à la configuration du consommateur
+force donc C++23, même si le paquet a été installé avec la réflexion activée.
 
 ## Sources et suites possibles
 

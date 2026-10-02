@@ -1,5 +1,11 @@
 @PACKAGE_INIT@
 include(CMakeFindDependencyMacro)
 find_dependency(Boost 1.92 CONFIG COMPONENTS callable_traits mp11)
-include("${CMAKE_CURRENT_LIST_DIR}/mini_openmethodCibles.cmake")
+if(NOT TARGET mini_openmethod::mini_openmethod)
+    include("${CMAKE_CURRENT_LIST_DIR}/mini_openmethodCibles.cmake")
+    include("${CMAKE_CURRENT_LIST_DIR}/choisir_implementation.cmake")
+    get_target_property(entetes_mini_openmethod mini_openmethod::mini_openmethod INTERFACE_INCLUDE_DIRECTORIES)
+    configurer_implementation(mini_openmethod::mini_openmethod "${entetes_mini_openmethod}")
+    unset(entetes_mini_openmethod)
+endif()
 check_required_components(mini_openmethod)
