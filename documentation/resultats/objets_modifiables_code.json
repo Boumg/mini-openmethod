@@ -1,0 +1,22 @@
+[
+  {
+    "Fichier": "build-validation-modifiables/avant/appels-msvc.exe",
+    "TailleCode": 27136,
+    "SHA256": "3E473ED346D3DA269F98B02141EDF54B7BE87B63C59FB6ACA7CE8B5F8E3D4000"
+  },
+  {
+    "Fichier": "build-msvc/Release/comparer_appels.exe",
+    "TailleCode": 27136,
+    "SHA256": "3E473ED346D3DA269F98B02141EDF54B7BE87B63C59FB6ACA7CE8B5F8E3D4000"
+  },
+  {
+    "Fichier": "build-validation-modifiables/avant/appels-clang.exe",
+    "TailleCode": 34304,
+    "SHA256": "E4BC79454B543C6D7CD0EC3C77F1A566E42ABA0EA3CC106F2C9AB4F1774A6918"
+  },
+  {
+    "Fichier": "build-llvm/comparer_appels.exe",
+    "TailleCode": 34304,
+    "SHA256": "E4BC79454B543C6D7CD0EC3C77F1A566E42ABA0EA3CC106F2C9AB4F1774A6918"
+  }
+]

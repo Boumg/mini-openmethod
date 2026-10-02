@@ -96,6 +96,16 @@ jobs:
           docker run --rm --mount "type=bind,source=$PWD,target=/sources,readonly" \
             --mount "type=bind,source=$PWD/build-gcc,target=/resultats" \
             mini-openmethod-gcc:16.2 bash /sources/outils/verifier-gcc.sh
+      - name: Consommer le paquet reflechi avec GCC 13 sans reflexion
+        run: |
+          for mode in AUTO OFF; do
+            cmake -S tests/installation -B build-consommateur-gcc13 \
+              -DCMAKE_CXX_COMPILER=g++-13 -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_PREFIX_PATH="$PWD/build-gcc/auto/installation;$PWD/build-gcc/vcpkg_installed/x64-linux" \
+              -DMINI_OPENMETHOD_REFLEXION="$mode" -DMINI_OPENMETHOD_REFLEXION_ATTENDUE=0
+            cmake --build build-consommateur-gcc13 --parallel 2
+            ctest --test-dir build-consommateur-gcc13 --output-on-failure
+          done
       - name: Conserver les resultats
         if: always()
         uses: actions/upload-artifact@v4
@@ -104,6 +114,6 @@ jobs:
           path: |
             build-gcc/*/configuration.log
             build-gcc/*/tests.log
-            build-gcc/*/installation.log
+            build-gcc/*/installation-*.log
             build-gcc/*/compilation.txt
             build-gcc/*/mesures.txt

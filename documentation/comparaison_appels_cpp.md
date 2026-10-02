@@ -148,6 +148,23 @@ exactement le même programme.
 
 ## Consulter, vérifier ou actualiser
 
+### Contrôle après ajout des objets modifiables
+
+Le 2 octobre 2026, les exécutables Release du banc à sources inchangées ont été
+comparés avant et après l'ajout de `Classe&` (issue #4). La section machine
+`.text` est identique octet pour octet sous MSVC 19.51 et Clang 23.1.2 :
+27 136 et 34 304 octets respectivement. Les
+[empreintes SHA-256 conservées](resultats/objets_modifiables_code.json)
+comparent les exécutables de la version intégrée par #3 avec ceux de cette évolution.
+
+Ce contrôle porte sur les appels constants existants, bruts et préparés, du
+banc `comparer_appels`. Il n'est pas une mesure du coût de mutation d'un objet,
+de conversion d'une référence préparée modifiable vers constante, ni une garantie
+sur tous les compilateurs. Les résultats chronométriques ci-dessus sont conservés ;
+aucun nouveau chronométrage n'a été nécessaire pour ce contrôle du code généré.
+
+### Quand relancer les mesures
+
 La référence ci-dessus reste figée. **Ne pas refaire les chronométrages pour
 chaque changement de documentation, ajout de test ou question de comparaison.**
 Une nouvelle mesure est utile sur demande, pour évaluer une évolution du chemin

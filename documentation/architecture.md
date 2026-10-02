@@ -37,7 +37,7 @@ paramètres transmis aux traitements sans participer à leur sélection :
 contexte, montant, flux ou ressource possédée. Chaque position de la signature
 possède exactement un descripteur dans `domaines<...>` :
 
-- `liste_types<...>` désigne une position polymorphe, toujours `const Classe&` ;
+- `liste_types<...>` désigne une position polymorphe, `Classe&` ou `const Classe&` ;
 - `argument_ordinaire` conserve le type annoncé, valeur ou référence, sans
   indexation RTTI ni conversion vers une classe spécialisée.
 
@@ -98,7 +98,12 @@ une référence constante garde son identité, et une valeur seulement déplaça
 telle que `std::unique_ptr<T>` atteint la spécialisation sans copie.
 Pour une classe passée par valeur depuis une lvalue, le contrat actuel comporte
 une copie dans le paramètre public puis un déplacement dans le paramètre du
-traitement ; les relais n'ajoutent aucun transfert.
+traitement ; les relais n'ajoutent aucun transfert. Si la construction depuis
+une rvalue est interdite mais la copie reste possible, seul le dernier ajustement
+transmet une référence constante pour copier la valeur dans le traitement.
+L'appel depuis une lvalue effectue alors deux copies, et celui depuis une prvalue
+une seule. Cette adaptation ne concerne jamais un paramètre référence (`T&`,
+`const T&`, `T&&`) et préserve les déplacements disponibles, même sans `noexcept`.
 
 `preparer<Position>` emploie la position absolue dans la signature :
 `preparer<1>` et `preparer<3>` dans l'exemple précédent. Préparer une position
@@ -113,6 +118,48 @@ le nombre de registres nécessaires. Ce constat architectural ne prouve donc
 ni un coût d'appel nul, ni une égalité de performance avec Boost. Les
 [mesures et leur protocole](comparaison_boost.md) séparent les anciens scénarios
 et le nouveau scénario à arguments ordinaires.
+
+## Objets polymorphes modifiables
+
+L'[issue #4](https://github.com/Boumg/mini-openmethod/issues/4) étend les positions
+polymorphes à `Classe&`. Le concept interne `reference_classe` accepte les
+références lvalue non volatiles, constantes ou modifiables. `parametre` contrôle
+ensuite que chaque spécialisation garde exactement la qualification constante
+de la position déclarée, avant de projeter les signatures vers la résolution.
+
+Cette règle évite de définir une priorité entre `Derive&` et `const Derive&`
+pour une même méthode. Une spécialisation modifiable peut choisir de ne rien
+modifier ; une spécialisation constante sur cette position est refusée. Les
+deux positions d'un double dispatch peuvent avoir des qualifications différentes.
+
+Les relations d'héritage des résolveurs utilisent déjà les classes sans
+qualifications. Avec la validation précédente, leurs algorithmes C++23/C++26
+restent inchangés, tout comme le cache des relations réfléchies. Les relais
+conservent les références et ajustent vers le type qualifié de la spécialisation :
+aucun `const_cast`, indicateur de mutabilité à l'exécution, transfert d'objet ou
+dimension supplémentaire de table n'est nécessaire.
+
+`reference_preparee<Base, Liste, Modifiable = false>` conserve un `const Base*`
+par défaut et un `Base*` pour une position modifiable, plus le même indice.
+Le booléen est un paramètre de modèle, sans stockage dans l'objet.
+Un constructeur de conversion autorise uniquement la restriction modifiable
+vers constante, avec racine et liste identiques. Il recopie le pointeur et
+l'indice, sans RTTI. La forme existante à deux paramètres reste constante.
+Un descripteur préparé lui-même `const` garde les droits d'accès de son type.
+
+`preparer` teste la conversion du pointeur de l'objet vers la racine qualifiée
+attendue : un objet constant est rejeté pour une position modifiable. L'appel
+brut est protégé par les références de sa signature C++ ; l'appel préparé par
+le type de son descripteur. Les indices absolus, le refus des temporaires et
+le contrat de durée de vie restent inchangés. Les mutations des données
+n'invalident pas l'indice et restent visibles lors des appels suivants.
+
+Les tests utilisent des objets non copiables, vérifient les quatre combinaisons
+de qualifications en double dispatch, les bases multiples et virtuelles, les
+arguments ordinaires et les exceptions après mutation. Les programmes négatifs
+contrôlent les diagnostics, dont ceux du compilateur pour les mauvais appels.
+Le cas réfléchi 16 × 16 / 256 spécialisations couvre les signatures constantes
+et mixtes sans augmenter les limites constexpr.
 
 ## Deux générations de tables, une API commune
 
@@ -178,8 +225,13 @@ avec la bibliothèque, d'abord sans option puis avec `-freflection` sous GCC ou
 Clang. L'échec de la sonde fait choisir C++23 en `AUTO`, mais arrête la
 configuration en `ON`. Le test porte sur la chaîne complète, pas sur sa version.
 Tous les fichiers d'un programme doivent employer le même réglage. La cible
-CMake propage ce choix, le standard minimum et les options, y compris installée ;
-un consommateur d'une installation ne refait pas cette sélection.
+CMake propage ce choix, le standard minimum et les options. L'export installé
+conserve uniquement le socle C++23, les en-têtes et les dépendances Boost.
+Au premier `find_package`, le module de sélection installé refait la sonde avec
+les en-têtes du paquet et la chaîne du consommateur, puis configure la cible
+importée selon son propre `AUTO`, `ON` ou `OFF`. Le choix du producteur n'est
+donc pas exporté. Les recherches suivantes réutilisent la cible sans ajouter
+de définitions ni d'options ; changer le mode demande une reconfiguration CMake.
 
 ## Séparer les trois moments
 
@@ -294,12 +346,13 @@ Le [banc d'indexation](performances.md#choix-du-seuil-dindexation) documente
 le choix du seuil ; celui-ci n'est pas un optimum universel.
 
 `methode::preparer<Position>(objet)` valide le type et construit une
-`reference_preparee<Base, Liste>` contenant un pointeur et un indice privé.
+`reference_preparee<Base, Liste, Modifiable>` contenant un pointeur et un indice privé.
+Le paramètre `Modifiable`, faux par défaut, correspond à la qualification de la position.
 L'appel préparé calcule directement la case de dispatch. Les ajustements
 d'héritage restent ceux de l'appel ordinaire, notamment le `dynamic_cast` vers
 une base virtuelle. La préparation n'appelle aucune spécialisation.
 
-Le constructeur est privé et les temporaires sont refusés. L'identité de la
+Le constructeur depuis un objet est privé et les temporaires sont refusés. L'identité de la
 racine et l'ordre de la liste empêchent de transmettre un indice à une table
 incompatible. Une référence ne dépend pas des captures ni de l'adresse de la
 méthode : elle reste utilisable après déplacement de celle-ci et peut servir
@@ -398,6 +451,10 @@ choix attendu. Les refus des fonctions variadiques et des opérateurs qualifiés
 par référence sont conservés. Le script contrôle aussi qu'un choix explicite 0
 reste respecté lorsque le compilateur possède la réflexion activée.
 Les vérifications fonctionnelles doctest restent actives avec `NDEBUG`.
+Pour chaque installation GCC, le consommateur passe successivement par `OFF`,
+`ON`, `AUTO`, puis `OFF` dans le même répertoire de construction. La CI consomme
+aussi le paquet produit avec réflexion sous GCC 16.2 depuis GCC 13 en `AUTO`
+et `OFF`, afin de vérifier la portabilité de l'export entre compilateurs.
 Les [mesures de performance](performances.md) sont
 indicatives et n'imposent aucun seuil de temps aux tests.
 

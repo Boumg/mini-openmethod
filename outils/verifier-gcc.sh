@@ -25,12 +25,19 @@ for configuration in cpp23:OFF cpp26:ON auto:AUTO; do
         cmake --build "$dossier" --clean-first --parallel 2 2>&1 | tee "$dossier/compilation.log"
     ctest --test-dir "$dossier" --output-on-failure --parallel 2 2>&1 | tee "$dossier/tests.log"
     cmake --install "$dossier" --prefix "$dossier/installation"
-    cmake --fresh -S /sources/tests/installation -B "$dossier/consommateur" -G Ninja \
-        "${options_vcpkg[@]}" \
-        -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$dossier/installation" \
-        -DMINI_OPENMETHOD_REFLEXION_ATTENDUE="$attendu"
-    cmake --build "$dossier/consommateur"
-    ctest --test-dir "$dossier/consommateur" --output-on-failure 2>&1 | tee "$dossier/installation.log"
+    # Le choix du consommateur doit etre independant du producteur, meme apres reconfiguration.
+    for mode_consommateur in OFF ON AUTO OFF; do
+        attendu_consommateur=1
+        if [ "$mode_consommateur" = OFF ]; then attendu_consommateur=0; fi
+        cmake -S /sources/tests/installation -B "$dossier/consommateur" -G Ninja \
+            "${options_vcpkg[@]}" \
+            -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$dossier/installation" \
+            -DMINI_OPENMETHOD_REFLEXION="$mode_consommateur" \
+            -DMINI_OPENMETHOD_REFLEXION_ATTENDUE="$attendu_consommateur"
+        cmake --build "$dossier/consommateur"
+        ctest --test-dir "$dossier/consommateur" --output-on-failure 2>&1 \
+            | tee "$dossier/installation-$mode_consommateur.log"
+    done
     "$dossier/mesurer_dispatch" 5000000 42 | tee "$dossier/mesures.txt"
 done
 # Un compilateur capable de reflexion doit aussi respecter le choix explicite C++23.
