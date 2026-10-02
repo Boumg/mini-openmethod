@@ -2,13 +2,15 @@
 
 ## Organisation des en-têtes
 
-- `mini_openmethod/domaines.hpp` déclare `liste_types`, `domaines` et l'exception
+- `mini_openmethod/domaines.hpp` déclare `liste_types`, `argument_ordinaire`, `domaines` et l'exception
   `type_inconnu`.
 - `mini_openmethod/detail/traits.hpp` regroupe les assistants internes :
   les concepts de signature, `types_uniques` et `traits_liste`.
   Il inclut `domaines.hpp` et `detail/traits_fonction.hpp`.
 - `mini_openmethod/detail/traits_fonction.hpp` analyse les signatures avec
   Boost.CallableTraits, dans les deux modes.
+- `mini_openmethod/detail/arguments.hpp` valide les descripteurs, distingue les
+  paramètres ordinaires et projette les signatures sur les positions polymorphes.
 - `mini_openmethod/detail/index_types.hpp` fournit les recherches RTTI linéaire
   et hachée, avec validation du type exact.
 - `mini_openmethod/reference_preparee.hpp` décrit une référence non propriétaire
@@ -27,6 +29,90 @@ Les en-têtes publics peuvent être inclus seuls. L'inclusion de `methode.hpp`
 reste suffisante pour utiliser toute l'API publique ; les noms de `detail`
 restent internes. Seul `resolution_cpp26.hpp` exige directement une chaîne
 compatible réflexion ; la sélection évite son inclusion en C++23.
+
+## Arguments ordinaires : choix d'API et comparaison avec Boost
+
+L'[issue #2](https://github.com/Boumg/mini-openmethod/issues/2) introduit les
+paramètres transmis aux traitements sans participer à leur sélection :
+contexte, montant, flux ou ressource possédée. Chaque position de la signature
+possède exactement un descripteur dans `domaines<...>` :
+
+- `liste_types<...>` désigne une position polymorphe, toujours `const Classe&` ;
+- `argument_ordinaire` conserve le type annoncé, valeur ou référence, sans
+  indexation RTTI ni conversion vers une classe spécialisée.
+
+Par exemple, `int(Contexte&, const Animal&, double, const Support&)` emploie
+`domaines<argument_ordinaire, Animaux, argument_ordinaire, Supports>`.
+Les seules coordonnées de la table sont les positions 1 et 3. Le contexte et
+le montant ne créent aucune dimension supplémentaire, même si le contexte est
+lui-même polymorphe.
+
+| Choix | mini-openmethod | Boost.OpenMethod 1.92 |
+| --- | --- | --- |
+| Positions participant au dispatch | Listes de types dans `domaines` ; marqueur explicite pour chaque argument ordinaire | `virtual_<T>` ou `virtual_ptr<T>` dans la signature ; paramètres ordinaires sans marqueur |
+| Description de la signature | Signature C++ inchangée, descripteurs séparés | Décorateurs dans la signature de `method`, retirés pour l'appel utilisateur |
+| Construction des tables | Résolution à la compilation sur les domaines fermés | Enregistrements de classes et de spécialisations, puis `initialize()` construit les tables |
+| Appel | Indexer les seules positions polymorphes, choisir le relais et transmettre tous les arguments | Résoudre sur les paramètres virtuels, puis appeler la fonction avec tous les paramètres |
+| Réutilisation d'une identification | `reference_preparee`, liée à la racine et à la liste ordonnée | `virtual_ptr`, associé au registre |
+| Extensibilité | Recompilation de la composition | Modèle d'enregistrement plus général ; pas la même garantie statique sur un domaine fermé |
+
+Cette comparaison porte sur l'[API sans macros de Boost.OpenMethod](https://www.boost.org/doc/libs/1_92_0/libs/openmethod/doc/html/openmethod/core_api.html)
+et ses [signatures mixtes](https://www.boost.org/doc/libs/1_92_0/libs/openmethod/doc/html/openmethod/basics.html).
+Les macros ne sont donc pas un critère différenciant. Notre choix préserve les
+anciens appels à `creer_methode` et les domaines explicites. En contrepartie,
+une signature contenant beaucoup d'arguments ordinaires répète davantage de
+marqueurs que celle de Boost. La simplicité dépend de l'usage ; elle n'est pas
+un avantage universel.
+
+### Projection commune aux deux générateurs
+
+`description_arguments` utilise Boost.Mp11 pour filtrer les indices des
+positions polymorphes et leurs domaines. Les signatures des spécialisations
+sont projetées sur ces positions, sous forme de types `void(Polymorphes...)`.
+Le retour et la signature complète sont contrôlés auparavant ; le retour fictif
+`void` n'intervient pas dans la sélection. Les deux générateurs existants
+reçoivent ainsi exactement leur ancien format, sans modifier leur algorithme.
+Ni l'applicabilité ni la dominance ne prennent en compte les arguments ordinaires.
+
+L'arité totale sert à valider et transmettre les paramètres. L'arité de dispatch,
+limitée à un ou deux, détermine les dimensions et l'aplatissement de la table.
+Pour N × M types, celle-ci conserve N × M pointeurs, quel que soit le nombre
+d'arguments ordinaires. La réflexion C++26 porte uniquement sur les signatures
+projetées ; C++23 fournit la même sémantique.
+
+Le type ordinaire d'une spécialisation doit être identique à celui de la
+signature, références et qualifications comprises selon les règles des types
+de fonctions C++. Les conversions habituelles restent possibles à l'entrée
+de l'opérateur public, par exemple un entier vers un paramètre `double`.
+Une spécialisation ne peut pas remplacer ce `double` par `int`.
+
+### Transmission et références préparées
+
+Pour une signature mixte, l'identification parcourt un tuple de références et
+ne lit que les positions polymorphes. Sans argument ordinaire, un `if constexpr`
+conserve l'accès direct aux paramètres : la projection par tuple dégradait
+l'optimisation du petit double dispatch sous Clang. Ce choix n'ajoute aucune
+branche à l'exécution. Les relais internes reçoivent les arguments par références et
+`std::forward` conserve leur catégorie. Une référence mutable reste mutable,
+une référence constante garde son identité, et une valeur seulement déplaçable
+telle que `std::unique_ptr<T>` atteint la spécialisation sans copie.
+Pour une classe passée par valeur depuis une lvalue, le contrat actuel comporte
+une copie dans le paramètre public puis un déplacement dans le paramètre du
+traitement ; les relais n'ajoutent aucun transfert.
+
+`preparer<Position>` emploie la position absolue dans la signature :
+`preparer<1>` et `preparer<3>` dans l'exemple précédent. Préparer une position
+ordinaire est une erreur de compilation. L'appel préparé remplace toutes les
+positions polymorphes par leurs références préparées ; les paramètres ordinaires
+restent inchangés. Une référence préparée reste réutilisable entre méthodes
+compatibles, indépendamment du placement de leurs paramètres ordinaires.
+
+Le moteur n'ajoute aucune allocation, recherche RTTI ou dimension de table pour
+ces paramètres. Leur transmission peut néanmoins modifier l'ABI, l'inlining et
+le nombre de registres nécessaires. Ce constat architectural ne prouve donc
+ni un coût d'appel nul, ni une égalité de performance avec Boost. Les
+[mesures et leur protocole](comparaison_boost.md) séparent les anciens scénarios
+et le nouveau scénario à arguments ordinaires.
 
 ## Deux générations de tables, une API commune
 
@@ -96,6 +182,13 @@ CMake propage ce choix, le standard minimum et les options, y compris installée
 un consommateur d'une installation ne refait pas cette sélection.
 
 ## Séparer les trois moments
+
+Une fonction virtuelle C++ choisit son traitement selon l'objet receveur.
+mini-openmethod conserve l'opération hors de la hiérarchie et peut sélectionner
+sur deux objets. Un appel direct non virtuel suffit quand le traitement est
+déjà connu statiquement. La [comparaison native conservée](comparaison_appels_cpp.md)
+distingue ces contrats, la visibilité des corps et les coûts mesurés ; elle
+ne nécessite pas un nouveau chronométrage à chaque modification.
 
 La signature de l'opération, les listes de types et les types des lambdas sont
 connus pendant la compilation. Les captures sont des valeurs fournies lors de
@@ -268,6 +361,14 @@ avant toute conversion vers une spécialisation.
 Les mêmes règles sont contrôlées avec des références préparées, y compris les
 retours, exceptions et captures après déplacement. Des assertions vérifient
 l'impossibilité de fabriquer un indice ou de mélanger des domaines incompatibles.
+`test_arguments.cpp` vérifie les positions ordinaires avant, entre et après
+les objets polymorphes, une matrice 3 × 2, les références et ressources mobiles,
+le nombre de copies/déplacements, les exceptions et la réutilisation des
+références préparées entre signatures différentes. Un objet polymorphe ordinaire
+absent des listes confirme que ces paramètres ne sont pas indexés.
+Les descripteurs invalides, l'absence ou l'excès de positions polymorphes,
+les types ordinaires incompatibles, les signatures incomplètes et la préparation
+d'une position ordinaire ont chacun un refus de compilation dédié.
 `test_indexation.cpp` couvre les tailles 1, 2, 4, 5, 8, 9 et 32 et force toutes les
 adresses dans la même case pour tester collisions, retour à zéro et rejet des
 inconnus. Les temporaires et positions de préparation invalides ont des tests
@@ -278,7 +379,8 @@ matrice rectangulaire, permutation des fonctions, intersections, doublons,
 absence de candidat et héritages inaccessibles. En mode réflexion, il compare
 aussi directement les deux générateurs par `static_assert`.
 En mode réflexion, `test_grand_domaine.cpp` construit 256 spécialisations pour
-16 × 16 types et vérifie toutes les cases avec des appels ordinaires et préparés,
+16 × 16 types, avec un argument ordinaire intercalé, et vérifie toutes les cases
+avec des objets bruts et des références préparées,
 ainsi que le rejet d'un descendant inconnu. Il compile sans augmentation des
 limites `constexpr`. Le script GCC l'exécute avec `ON` et `AUTO` ; le contrôle
 du mode attendu garantit que la sélection automatique exerce bien la réflexion.
@@ -300,7 +402,7 @@ Les [mesures de performance](performances.md) sont
 indicatives et n'imposent aucun seuil de temps aux tests.
 
 Lorsque `MINI_OPENMETHOD_COMPARAISON_BOOST=ON`, le test `equivalence_boost`
-vérifie six scénarios sur 4 096 entrées chacun, avec des résultats attendus
+vérifie sept scénarios sur 4 096 entrées chacun, avec des résultats attendus
 calculés indépendamment du dispatch. Le mode `--verifier` ne chronomètre pas.
 Boost.OpenMethod est une dépendance du seul exécutable de comparaison, fournie
 par la fonctionnalité facultative `comparaison-boost` du manifeste vcpkg.

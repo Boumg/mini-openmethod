@@ -1,0 +1,49 @@
+Comparaison GCC 16.2 - avant : 09a8022, apres : arguments ordinaires
+Meme source mesurer_dispatch.cpp, -O3 -DNDEBUG -std=c++23, sans compilation concurrente
+Trois paires alternees, cinq passages internes, 20 millions appels, graine 42
+C++26 apres : executable CMake -O3 -DNDEBUG -std=c++26 -freflection
+Passage 1, version avant
+Reflexion=0 ; iterations=20000000 ; graine=42
+Simple : 1.00062 ns/appel ; somme=128852540
+Double : 1.44183 ns/appel ; somme=248745053
+Heritage virtuel : 11.9193 ns/appel ; somme=300097604
+Passage 1, version apres
+Reflexion=0 ; iterations=20000000 ; graine=42
+Simple : 0.98601 ns/appel ; somme=128852540
+Double : 1.45083 ns/appel ; somme=248745053
+Heritage virtuel : 12.0486 ns/appel ; somme=300097604
+Passage 1, version cpp26
+Reflexion=1 ; iterations=20000000 ; graine=42
+Simple : 1.00189 ns/appel ; somme=128852540
+Double : 1.61768 ns/appel ; somme=248745053
+Heritage virtuel : 12.1603 ns/appel ; somme=300097604
+Passage 2, version avant
+Reflexion=0 ; iterations=20000000 ; graine=42
+Simple : 0.994489 ns/appel ; somme=128852540
+Double : 1.50096 ns/appel ; somme=248745053
+Heritage virtuel : 12.0218 ns/appel ; somme=300097604
+Passage 2, version apres
+Reflexion=0 ; iterations=20000000 ; graine=42
+Simple : 1.00513 ns/appel ; somme=128852540
+Double : 1.43433 ns/appel ; somme=248745053
+Heritage virtuel : 12.1005 ns/appel ; somme=300097604
+Passage 2, version cpp26
+Reflexion=1 ; iterations=20000000 ; graine=42
+Simple : 1.00503 ns/appel ; somme=128852540
+Double : 1.67224 ns/appel ; somme=248745053
+Heritage virtuel : 12.0781 ns/appel ; somme=300097604
+Passage 3, version avant
+Reflexion=0 ; iterations=20000000 ; graine=42
+Simple : 0.989767 ns/appel ; somme=128852540
+Double : 1.47849 ns/appel ; somme=248745053
+Heritage virtuel : 11.9314 ns/appel ; somme=300097604
+Passage 3, version apres
+Reflexion=0 ; iterations=20000000 ; graine=42
+Simple : 0.994981 ns/appel ; somme=128852540
+Double : 1.48167 ns/appel ; somme=248745053
+Heritage virtuel : 11.8814 ns/appel ; somme=300097604
+Passage 3, version cpp26
+Reflexion=1 ; iterations=20000000 ; graine=42
+Simple : 0.964763 ns/appel ; somme=128852540
+Double : 1.59979 ns/appel ; somme=248745053
+Heritage virtuel : 11.9865 ns/appel ; somme=300097604

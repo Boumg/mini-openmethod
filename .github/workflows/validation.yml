@@ -64,6 +64,12 @@ jobs:
         run: cmake --build build --config Release --parallel 2
       - name: Verifier les comportements et les refus de compilation
         run: ctest --test-dir build -C Release --output-on-failure
+      - name: Compiler et verifier aussi en Debug sous MSVC
+        if: runner.os == 'Windows'
+        run: |
+          cmake --build build --config Debug --parallel 2
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          ctest --test-dir build -C Debug --output-on-failure
       - name: Verifier l'installation
         run: cmake --install build --config Release --prefix installation
       - name: Configurer un consommateur sous Linux

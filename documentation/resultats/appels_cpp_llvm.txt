@@ -1,0 +1,27 @@
+Reference ponctuelle du 2 octobre 2026 - AMD Ryzen 9 9950X
+MSVC et Clang : Windows x64, affinite sur le processeur logique 4 ; GCC : Linux x86-64 sous Docker Desktop
+Trois executions par compilateur, realisees en serie ; sept passages internes alternes ; aucune compilation simultanee
+Execution 1
+Compilateur=Clang 23.1.2 (https://github.com/llvm/llvm-project 85ac560262434c9ccfc0c183ec22d4138ed647fb)
+Reflexion=0;iterations=5000000;graine=42;passages=7
+NDEBUG=1;LTO=desactivee;preparation=hors_chronometrage
+Types;Direct visible ns/appel;Direct separe ns/appel;Virtuel ns/appel;Mini visible ns/appel;Mini visible prepare ns/appel;Mini separe ns/appel;Mini separe prepare ns/appel;Somme
+1;0.212;0.730;1.098;1.290;0.235;1.861;0.921;257613820
+2;sans objet;sans objet;4.144;1.409;0.299;2.446;0.960;202650993
+8;sans objet;sans objet;5.693;2.484;0.368;3.997;7.590;263985862
+Execution 2
+Compilateur=Clang 23.1.2 (https://github.com/llvm/llvm-project 85ac560262434c9ccfc0c183ec22d4138ed647fb)
+Reflexion=0;iterations=5000000;graine=42;passages=7
+NDEBUG=1;LTO=desactivee;preparation=hors_chronometrage
+Types;Direct visible ns/appel;Direct separe ns/appel;Virtuel ns/appel;Mini visible ns/appel;Mini visible prepare ns/appel;Mini separe ns/appel;Mini separe prepare ns/appel;Somme
+1;0.212;0.727;1.091;1.283;0.234;2.012;0.913;257613820
+2;sans objet;sans objet;4.226;1.309;0.305;2.473;0.953;202650993
+8;sans objet;sans objet;5.704;2.444;0.368;3.927;7.576;263985862
+Execution 3
+Compilateur=Clang 23.1.2 (https://github.com/llvm/llvm-project 85ac560262434c9ccfc0c183ec22d4138ed647fb)
+Reflexion=0;iterations=5000000;graine=42;passages=7
+NDEBUG=1;LTO=desactivee;preparation=hors_chronometrage
+Types;Direct visible ns/appel;Direct separe ns/appel;Virtuel ns/appel;Mini visible ns/appel;Mini visible prepare ns/appel;Mini separe ns/appel;Mini separe prepare ns/appel;Somme
+1;0.211;0.727;1.091;1.285;0.234;2.008;0.913;257613820
+2;sans objet;sans objet;4.143;1.341;0.295;2.361;0.961;202650993
+8;sans objet;sans objet;5.669;2.465;0.366;3.999;7.142;263985862

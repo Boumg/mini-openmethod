@@ -4,6 +4,9 @@ La comparaison avec Boost.OpenMethod, installé par vcpkg, dispose de son
 [protocole et de ses résultats](comparaison_boost.md). Le tableau ci-dessous
 conserve la mesure antérieure de l'optimisation des conversions.
 
+La [comparaison avec une fonction virtuelle et une fonction non virtuelle](comparaison_appels_cpp.md)
+est une référence datée, consultable sans relancer les chronométrages.
+
 L'API ne change pas selon le compilateur. La version C++26 parcourt des types
 réfléchis dans des boucles `consteval` pour construire la table ; la version
 C++23 emploie des développements de paramètres de modèles. Le chemin d'appel

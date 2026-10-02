@@ -171,6 +171,56 @@ void comparer_double(std::size_t iterations, std::uint32_t graine,
         [&](std::size_t indice) { return Prepare::fn(gauche[indice], droite[indice]); });
 }
 
+/** Deux valeurs ordinaires entourent la position polymorphe. */
+template<std::size_t Rang>
+int traiter_montant(const int& contexte, const Espece<Rang>& objet, int montant) {
+    return traiter_simple(objet) + contexte + montant;
+}
+template<class Contexte, std::size_t Rang>
+int traiter_pointeur_montant(const int& contexte,
+                            om::virtual_ptr<const Espece<Rang>, Contexte> objet, int montant) {
+    return traiter_montant(contexte, *objet, montant);
+}
+template<std::size_t Nombre> struct Cas_ordinaire;
+
+template<std::size_t Nombre, std::size_t... Rangs>
+void comparer_ordinaires(std::size_t iterations, std::uint32_t graine, std::index_sequence<Rangs...>) {
+    using Contexte = Registre<Cas_ordinaire<Nombre>>;
+    using Base = Animal<false>;
+    using Pointeur = om::virtual_ptr<const Base, Contexte>;
+    struct Identifiant_reference;
+    struct Identifiant_prepare;
+    using Reference = om::method<Identifiant_reference,
+        int(const int&, om::virtual_<const Base&>, int), Contexte>;
+    using Prepare = om::method<Identifiant_prepare, int(const int&, Pointeur, int), Contexte>;
+    static const om::use_classes<Base, Espece<Rangs>..., Contexte> classes;
+    static const typename Reference::template override<traiter_montant<Rangs>...> references;
+    static const typename Prepare::template override<traiter_pointeur_montant<Contexte, Rangs>...> prepares;
+    om::initialize<Contexte>();
+    const auto jeu = creer_jeu_animaux(Nombre, graine);
+    using namespace mini_openmethod;
+    auto mini = creer_methode<int(const int&, const Base&, int)>(
+        domaines<argument_ordinaire, liste_types<Espece<Rangs>...>, argument_ordinaire>{},
+        [](const int& contexte, const Espece<Rangs>& objet, int montant) {
+            return traiter_montant(contexte, objet, montant);
+        }...);
+    std::array<Pointeur, taille_sequence> pointeurs;
+    std::vector<decltype(mini.template preparer<1>(*jeu.gauche[0]))> mini_prepares;
+    mini_prepares.reserve(taille_sequence);
+    std::array<int, taille_sequence> attendus;
+    const int contexte = 7;
+    for (std::size_t indice = 0; indice < taille_sequence; ++indice) {
+        pointeurs[indice] = Pointeur(*jeu.gauche[indice]);
+        mini_prepares.push_back(mini.template preparer<1>(*jeu.gauche[indice]));
+        attendus[indice] = jeu.attendu_simple[indice] + contexte + static_cast<int>(indice);
+    }
+    comparer("Arguments ordinaires", Nombre, iterations, attendus,
+        [&](std::size_t indice) { return mini(contexte, *jeu.gauche[indice], static_cast<int>(indice)); },
+        [&](std::size_t indice) { return mini(contexte, mini_prepares[indice], static_cast<int>(indice)); },
+        [&](std::size_t indice) { return Reference::fn(contexte, *jeu.gauche[indice], static_cast<int>(indice)); },
+        [&](std::size_t indice) { return Prepare::fn(contexte, pointeurs[indice], static_cast<int>(indice)); });
+}
+
 std::uint64_t lire_entier(std::string_view texte) {
     std::uint64_t valeur = 0;
     const auto [fin, erreur] = std::from_chars(texte.data(), texte.data() + texte.size(), valeur);
@@ -215,6 +265,7 @@ int main(int nombre_arguments, char** arguments) {
         comparer_double<2>(iterations, graine32, std::make_index_sequence<2>{}, std::make_index_sequence<4>{});
         comparer_double<8>(iterations, graine32, std::make_index_sequence<8>{}, std::make_index_sequence<64>{});
         comparer_simple<2, true>(iterations, graine32, std::make_index_sequence<2>{});
+        comparer_ordinaires<2>(iterations, graine32, std::make_index_sequence<2>{});
     } catch (const std::exception& erreur) {
         std::cerr << erreur.what() << '\n';
         return 1;
