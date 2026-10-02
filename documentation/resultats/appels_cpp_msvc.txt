@@ -1,0 +1,27 @@
+Reference ponctuelle du 2 octobre 2026 - AMD Ryzen 9 9950X
+MSVC et Clang : Windows x64, affinite sur le processeur logique 4 ; GCC : Linux x86-64 sous Docker Desktop
+Trois executions par compilateur, realisees en serie ; sept passages internes alternes ; aucune compilation simultanee
+Execution 1
+Compilateur=MSVC 195136260
+Reflexion=0;iterations=5000000;graine=42;passages=7
+NDEBUG=1;LTO=desactivee;preparation=hors_chronometrage
+Types;Direct visible ns/appel;Direct separe ns/appel;Virtuel ns/appel;Mini visible ns/appel;Mini visible prepare ns/appel;Mini separe ns/appel;Mini separe prepare ns/appel;Somme
+1;0.348;0.914;0.922;2.012;1.098;2.030;0.930;257613820
+2;sans objet;sans objet;4.021;6.666;3.722;4.920;4.326;202650993
+8;sans objet;sans objet;5.638;3.436;5.748;3.636;5.999;263985862
+Execution 2
+Compilateur=MSVC 195136260
+Reflexion=0;iterations=5000000;graine=42;passages=7
+NDEBUG=1;LTO=desactivee;preparation=hors_chronometrage
+Types;Direct visible ns/appel;Direct separe ns/appel;Virtuel ns/appel;Mini visible ns/appel;Mini visible prepare ns/appel;Mini separe ns/appel;Mini separe prepare ns/appel;Somme
+1;0.342;0.911;0.913;2.012;1.098;2.017;0.948;257613820
+2;sans objet;sans objet;4.030;6.656;3.744;4.933;4.276;202650993
+8;sans objet;sans objet;5.643;3.426;5.749;3.612;6.360;263985862
+Execution 3
+Compilateur=MSVC 195136260
+Reflexion=0;iterations=5000000;graine=42;passages=7
+NDEBUG=1;LTO=desactivee;preparation=hors_chronometrage
+Types;Direct visible ns/appel;Direct separe ns/appel;Virtuel ns/appel;Mini visible ns/appel;Mini visible prepare ns/appel;Mini separe ns/appel;Mini separe prepare ns/appel;Somme
+1;0.334;0.916;0.915;2.020;1.099;2.021;0.919;257613820
+2;sans objet;sans objet;4.032;6.685;3.746;4.927;4.263;202650993
+8;sans objet;sans objet;5.655;3.417;5.750;3.643;6.164;263985862

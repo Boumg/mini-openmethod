@@ -261,6 +261,10 @@ les options du mode choisi et contrôlent toujours le diagnostic attendu.
 
 ## Comparer avec Boost.OpenMethod via vcpkg
 
+Pour situer le coût par rapport au C++ classique, consulter aussi la
+[comparaison avec les fonctions virtuelles et non virtuelles](documentation/comparaison_appels_cpp.md).
+Ses résultats sont conservés comme référence ; leur chronométrage reste manuel.
+
 Le banc facultatif compare les deux bibliothèques sur les mêmes objets :
 dispatch simple avec 2, 8 et 32 types, double dispatch avec 2 × 2 et 8 × 8 types,
 puis héritage virtuel et dispatch simple accompagné d'arguments ordinaires.

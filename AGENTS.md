@@ -11,3 +11,8 @@
 - Préférer le serveur MCP GitHub pour les opérations GitHub ; vérifier son authentification.
 - Utiliser des commits atomiques, par exemple : `feat: ajouter la résolution du double dispatch`.
 - Ne pas activer les greffons dynamiques sans définir leur contrat et leurs limites de validation.
+- Pour comparer les appels directs, virtuels et mini-openmethod, consulter d'abord
+  `documentation/comparaison_appels_cpp.md` et ses résultats datés. Ne pas relancer
+  systématiquement les chronométrages ; les actualiser sur demande ou lorsqu'un
+  changement du dispatch, du compilateur ou de la machine justifie une nouvelle mesure.
+  Les vérifications fonctionnelles `--verifier` peuvent rester automatiques.

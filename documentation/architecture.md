@@ -183,6 +183,13 @@ un consommateur d'une installation ne refait pas cette sélection.
 
 ## Séparer les trois moments
 
+Une fonction virtuelle C++ choisit son traitement selon l'objet receveur.
+mini-openmethod conserve l'opération hors de la hiérarchie et peut sélectionner
+sur deux objets. Un appel direct non virtuel suffit quand le traitement est
+déjà connu statiquement. La [comparaison native conservée](comparaison_appels_cpp.md)
+distingue ces contrats, la visibilité des corps et les coûts mesurés ; elle
+ne nécessite pas un nouveau chronométrage à chaque modification.
+
 La signature de l'opération, les listes de types et les types des lambdas sont
 connus pendant la compilation. Les captures sont des valeurs fournies lors de
 la construction de l'objet méthode. Les arguments et leurs types dynamiques
