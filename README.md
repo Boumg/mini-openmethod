@@ -48,6 +48,34 @@ signatures : il n'est pas nécessaire de répéter `Chien` dans un appel
 `override_for<Chien>`. Les captures, les lambdas `mutable`, les lambdas
 `noexcept` et les pointeurs de fonctions sont pris en charge.
 
+## Transmettre des arguments ordinaires
+
+Un contexte, un montant ou un flux peut accompagner les objets polymorphes.
+Indiquer `argument_ordinaire` à chaque position qui ne participe pas au dispatch :
+
+```cpp
+auto facturer = creer_methode<void(const Animal&, double, std::ostream&)>(
+    domaines<liste_types<Chien, Chat>, argument_ordinaire, argument_ordinaire>{},
+    [](const Chien&, double montant, std::ostream& sortie) { sortie << "Chien : " << montant; },
+    [](const Chat&, double montant, std::ostream& sortie) { sortie << "Chat : " << montant; });
+
+facturer(animal, 12.5, std::cout);
+facturer(facturer.preparer(animal), 18.0, std::cout);
+```
+
+Voir l'[exemple autonome](exemples/05_arguments_ordinaires.cpp).
+Les paramètres ordinaires peuvent précéder, séparer ou suivre les positions
+polymorphes. Ils conservent exactement leur type dans chaque spécialisation :
+valeur, `T&`, `const T&` ou `T&&`. Les valeurs seulement déplaçables sont acceptées.
+Leur valeur et leur éventuel type dynamique ne changent pas la sélection.
+
+Pour `int(Contexte&, const Animal&, double, const Support&)`, les descripteurs
+sont `domaines<argument_ordinaire, Animaux, argument_ordinaire, Supports>`, avec
+`Animaux` et `Supports` deux alias de `liste_types<...>`. La table ne dépend que
+des deux domaines polymorphes. Préparer ces objets avec `preparer<1>` et
+`preparer<3>` : les indices désignent les positions dans la signature complète.
+La syntaxe des méthodes existantes reste inchangée.
+
 ## Réutiliser une référence préparée
 
 Quand le même objet est traité plusieurs fois, son type peut être validé une
@@ -74,8 +102,9 @@ Les changements de ses données restent visibles.
 
 La racine et la liste ordonnée des types font partie du type de la référence.
 Elle peut servir à plusieurs méthodes compatibles et reste utilisable après
-déplacement de la méthode. L'appel accepte soit tous les objets ordinaires,
-soit toutes les références préparées. Cette option est utile pour les appels
+déplacement de la méthode. L'appel accepte soit tous les objets polymorphes bruts,
+soit toutes les références préparées, avec les mêmes arguments ordinaires.
+Cette option est utile pour les appels
 répétés ; elle n'est pas systématiquement plus rapide sur les petits domaines.
 
 ## Construire et tester
@@ -234,7 +263,8 @@ les options du mode choisi et contrôlent toujours le diagnostic attendu.
 
 Le banc facultatif compare les deux bibliothèques sur les mêmes objets :
 dispatch simple avec 2, 8 et 32 types, double dispatch avec 2 × 2 et 8 × 8 types,
-puis héritage virtuel. Pour chaque bibliothèque, il sépare les appels ordinaires
+puis héritage virtuel et dispatch simple accompagné d'arguments ordinaires.
+Pour chaque bibliothèque, il sépare les appels sur objets bruts
 et ceux depuis une référence préparée avant la mesure (`virtual_ptr` pour Boost).
 
 Avec les outils C++ de Visual Studio, depuis PowerShell :
@@ -263,6 +293,7 @@ du compilateur, de la taille du domaine et de la réutilisation des références
 | 2 | [Héritage](exemples/02_heritage.cpp) | Repli vers la spécialisation applicable la plus précise |
 | 3 | [Double dispatch](exemples/03_dispatch_double.cpp) | Sélection par une paire ordonnée de types |
 | 4 | [Ambiguïté résolue](exemples/04_ambiguite_resolue.cpp) | Ajout de l'intersection qui départage deux spécialisations |
+| 5 | [Arguments ordinaires](exemples/05_arguments_ordinaires.cpp) | Transmission d'un montant et d'un flux, avec objet brut ou référence préparée |
 
 Chaque exemple est autonome et retourne un code d'échec si son résultat est
 incorrect. Les deux implémentations couvrent toute cette progression, du
@@ -289,9 +320,10 @@ symétrique : `Chien × Chat` et `Chat × Chien` désignent deux cases distincte
 ## Architecture
 
 1. **Décrire** : `domaines<liste_types<...>, ...>` énumère les types dynamiques
-   autorisés, une liste par argument.
+   autorisés ; chaque argument possède une liste ou le marqueur `argument_ordinaire`.
 2. **Analyser** : les traits lisent la signature explicite de chaque appelable.
-   Les concepts et assertions vérifient les références et les relations d'héritage.
+   Les concepts et assertions vérifient les types ordinaires, les références et
+   les relations d'héritage. Seules les positions polymorphes sont projetées vers la résolution.
 3. **Résoudre** : pour chaque combinaison du produit cartésien, le compilateur
    retient l'unique candidat maximal selon l'ordre de spécialisation.
 4. **Vérifier** : absence de candidat ou plusieurs candidats maximaux provoquent
@@ -350,7 +382,10 @@ refusé même si une spécialisation de sa base pourrait le traiter.
 ## Contrat et limites
 
 - Une ou deux positions polymorphes, toutes sous forme `const Classe&`.
-  Aucun argument ordinaire supplémentaire, pointeur nullable ou référence mutable.
+  Elles n'acceptent ni pointeur nullable ni référence mutable.
+- Un nombre quelconque d'arguments ordinaires, décrits par `argument_ordinaire`,
+  avec exactement le même type dans toutes les spécialisations. Ils peuvent
+  être mutables ou nullables selon leur type C++ ; ils ne sont pas indexés.
 - Racines polymorphes ; héritage public et non ambigu vers chaque racine.
   L'héritage multiple et les diamants virtuels sont testés.
 - Les listes sont non vides, sans doublons et contiennent des classes sans

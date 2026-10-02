@@ -7,3 +7,6 @@ target_compile_definitions(verifier_installation PRIVATE
     MINI_OPENMETHOD_REFLEXION_ATTENDUE=${MINI_OPENMETHOD_REFLEXION_ATTENDUE})
 enable_testing()
 add_test(NAME installation COMMAND verifier_installation)
+add_executable(verifier_arguments ../../exemples/05_arguments_ordinaires.cpp)
+target_link_libraries(verifier_arguments PRIVATE mini_openmethod::mini_openmethod)
+add_test(NAME arguments_installes COMMAND verifier_arguments)
