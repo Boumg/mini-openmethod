@@ -132,9 +132,18 @@ struct Compteur {
     int* deplacements;
     Compteur(int& copies, int& deplacements) : copies(&copies), deplacements(&deplacements) {}
     Compteur(const Compteur& autre) : copies(autre.copies), deplacements(autre.deplacements) { ++*copies; }
-    Compteur(Compteur&& autre) noexcept : copies(autre.copies), deplacements(autre.deplacements) {
+    // Meme sans noexcept, un deplacement disponible doit rester prefere a la copie.
+    Compteur(Compteur&& autre) : copies(autre.copies), deplacements(autre.deplacements) {
         ++*deplacements;
     }
+};
+/** Valeur qui autorise la copie mais interdit explicitement le deplacement. */
+struct Copiable {
+    int* copies;
+    int valeur = 42;
+    explicit Copiable(int& copies) : copies(&copies) {}
+    Copiable(const Copiable& autre) : copies(autre.copies), valeur(autre.valeur) { ++*copies; }
+    Copiable(Copiable&&) = delete;
 };
 }
 
@@ -151,6 +160,45 @@ TEST_CASE("Arguments ordinaires : aucune copie dans les relais internes") {
     operation(operation.preparer(chien), valeur);
     CHECK(copies == 1);
     CHECK(deplacements == 1);
+}
+
+TEST_CASE("Arguments ordinaires : valeur copiable sans deplacement") {
+    auto operation = creer_methode<int(const Animal&, Copiable)>(
+        domaines<Animaux, argument_ordinaire>{}, [](const Animal&, Copiable valeur) {
+            return ++valeur.valeur;
+        });
+    Chien chien;
+    int copies = 0;
+    const Copiable valeur(copies);
+    auto verifier = [&](const auto& objet) {
+        copies = 0;
+        CHECK(operation(objet, valeur) == 43);
+        CHECK(valeur.valeur == 42);
+        CHECK(copies == 2); // Parametre public puis parametre de la specialisation.
+        copies = 0;
+        CHECK(operation(objet, Copiable(copies)) == 43);
+        CHECK(copies == 1); // Construction directe du parametre public depuis le temporaire.
+    };
+    verifier(chien);
+    verifier(operation.preparer(chien));
+}
+
+TEST_CASE("Arguments ordinaires : references sans copie malgre un deplacement interdit") {
+    int copies = 0;
+    Copiable valeur(copies);
+    auto operation = creer_methode<void(Animal&, Copiable&, const Copiable&, Copiable&&)>(
+        domaines<Animaux, argument_ordinaire, argument_ordinaire, argument_ordinaire>{},
+        [&](Animal&, Copiable& modifiable, const Copiable& constante, Copiable&& temporaire) {
+            CHECK(&modifiable == &valeur);
+            CHECK(&constante == &valeur);
+            CHECK(&temporaire == &valeur);
+            ++modifiable.valeur;
+        });
+    Chien chien;
+    operation(chien, valeur, valeur, std::move(valeur));
+    operation(operation.preparer(chien), valeur, valeur, std::move(valeur));
+    CHECK(valeur.valeur == 44);
+    CHECK(copies == 0);
 }
 
 TEST_CASE("Arguments ordinaires : heritage virtuel multiple et exceptions") {

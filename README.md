@@ -76,6 +76,12 @@ des deux domaines polymorphes. Préparer ces objets avec `preparer<1>` et
 `preparer<3>` : les indices désignent les positions dans la signature complète.
 La syntaxe des méthodes existantes reste inchangée.
 
+Les arguments ordinaires peuvent être passés par valeur ou par référence, y
+compris les ressources seulement déplaçables et les valeurs copiables dont le
+déplacement est explicitement supprimé. Pour une valeur, le transfert vers la
+spécialisation utilise le déplacement s'il est disponible, sinon la copie.
+Les références conservent leur identité et leur catégorie, sans copie.
+
 ## Modifier les objets polymorphes
 
 Déclarer une position en `Classe&` pour autoriser sa modification, et en

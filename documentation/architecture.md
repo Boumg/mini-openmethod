@@ -98,7 +98,12 @@ une référence constante garde son identité, et une valeur seulement déplaça
 telle que `std::unique_ptr<T>` atteint la spécialisation sans copie.
 Pour une classe passée par valeur depuis une lvalue, le contrat actuel comporte
 une copie dans le paramètre public puis un déplacement dans le paramètre du
-traitement ; les relais n'ajoutent aucun transfert.
+traitement ; les relais n'ajoutent aucun transfert. Si la construction depuis
+une rvalue est interdite mais la copie reste possible, seul le dernier ajustement
+transmet une référence constante pour copier la valeur dans le traitement.
+L'appel depuis une lvalue effectue alors deux copies, et celui depuis une prvalue
+une seule. Cette adaptation ne concerne jamais un paramètre référence (`T&`,
+`const T&`, `T&&`) et préserve les déplacements disponibles, même sans `noexcept`.
 
 `preparer<Position>` emploie la position absolue dans la signature :
 `preparer<1>` et `preparer<3>` dans l'exemple précédent. Préparer une position

@@ -83,8 +83,15 @@ class methode<Retour(Arguments...), domaines<Listes...>, Fonctions...> {
     /** Le type exact a deja ete valide par l'indexation RTTI avant cet ajustement. */
     template<class Cible, class Descripteur, class Argument>
     static decltype(auto) ajuster_argument(Argument&& argument) {
-        if constexpr (std::same_as<Descripteur, argument_ordinaire>)
-            return std::forward<Argument>(argument);
+        if constexpr (std::same_as<Descripteur, argument_ordinaire>) {
+            // Une valeur copiable peut interdire explicitement son deplacement.
+            if constexpr (!std::is_reference_v<Cible>
+                          && !std::is_constructible_v<Cible, Argument&&>
+                          && std::is_copy_constructible_v<Cible>)
+                return std::as_const(argument);
+            else
+                return std::forward<Argument>(argument);
+        }
         else if constexpr (requires { static_cast<Cible>(argument); })
             return static_cast<Cible>(argument);
         else
