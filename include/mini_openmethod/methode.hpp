@@ -26,7 +26,7 @@ class methode<Retour(Arguments...), domaines<Descripteurs...>, Fonctions...> {
 };
 /**
  * Methode externe validee pour toutes les combinaisons du domaine.
- * @tparam Arguments Signature complete, dont une ou deux positions polymorphes const&.
+ * @tparam Arguments Signature complete, dont une ou deux positions polymorphes T& ou const T&.
  * Les fonctions sont conservees par valeur, sans registre global.
  */
 template<class Retour, class... Arguments, class... Listes, class... Fonctions>
@@ -65,7 +65,7 @@ class methode<Retour(Arguments...), domaines<Listes...>, Fonctions...> {
         }
     }
     static_assert((fonction_valide<Fonctions>(positions{}) && ...),
-                  "Specialisation invalide : arite, retour exact, types ordinaires identiques et references constantes derives requis");
+                  "Specialisation invalide : arite, retour exact, types ordinaires identiques et references derivees de meme qualification const requis");
     template<std::size_t... Positions>
     static consteval auto dimensions_domaines(std::index_sequence<Positions...>) {
         return std::array<std::size_t, arite>{liste<Positions>::taille...};
@@ -173,11 +173,12 @@ public:
             static_assert(!std::same_as<Domaine, argument_ordinaire>,
                           "Une position ordinaire ne peut pas etre preparee");
             if constexpr (!std::same_as<Domaine, argument_ordinaire>) {
-                using Base = std::remove_cvref_t<std::tuple_element_t<Position, tuple_arguments>>;
-                constexpr bool compatible = std::is_convertible_v<std::remove_reference_t<Objet>*, const Base*>;
-                static_assert(compatible, "Objet incompatible avec la racine de cette position");
+                using Parametre = detail::parametre<std::tuple_element_t<Position, tuple_arguments>, Domaine>;
+                constexpr bool compatible = std::is_convertible_v<
+                    std::remove_reference_t<Objet>*, typename Parametre::objet*>;
+                static_assert(compatible, "Objet incompatible avec la racine ou la qualification const de cette position");
                 if constexpr (compatible) {
-                    return reference_preparee<Base, Domaine>(objet, liste<Position>::indice(typeid(objet)));
+                    return typename Parametre::reference(objet, liste<Position>::indice(typeid(objet)));
                 }
             }
         }

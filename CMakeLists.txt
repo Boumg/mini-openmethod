@@ -84,7 +84,7 @@ if(MINI_OPENMETHOD_TESTS)
 endif()
 if(MINI_OPENMETHOD_EXEMPLES)
     foreach(etape IN ITEMS 01_dispatch_simple 02_heritage 03_dispatch_double 04_ambiguite_resolue
-                           05_arguments_ordinaires)
+                           05_arguments_ordinaires 06_objets_modifiables)
         add_executable(${etape} exemples/${etape}.cpp)
         configurer_executable(${etape})
         if(MINI_OPENMETHOD_TESTS)

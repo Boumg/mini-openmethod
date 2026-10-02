@@ -76,6 +76,29 @@ des deux domaines polymorphes. Préparer ces objets avec `preparer<1>` et
 `preparer<3>` : les indices désignent les positions dans la signature complète.
 La syntaxe des méthodes existantes reste inchangée.
 
+## Modifier les objets polymorphes
+
+Déclarer une position en `Classe&` pour autoriser sa modification, et en
+`const Classe&` pour un accès en lecture seule. Par exemple, avec un membre
+`energie` dans la hiérarchie `Animal` :
+
+```cpp
+auto nourrir = creer_methode<void(Animal&, int)>(
+    domaines<liste_types<Chien, Chat>, argument_ordinaire>{},
+    [](Chien& chien, int quantite) { chien.energie += 2 * quantite; },
+    [](Chat& chat, int quantite) { chat.energie += quantite; });
+
+nourrir(chien, 3);
+nourrir(nourrir.preparer(chien), 2);
+```
+
+Les spécialisations modifient l'objet d'origine, sans copie. Chaque position
+garde exactement sa qualification `const` dans toutes les spécialisations :
+`Animal&` devient `Chien&`, `const Animal&` devient `const Chien&`.
+Une méthode peut mélanger les deux, par exemple `void(Animal&, const Support&)`.
+Un objet constant ne peut pas être passé ni préparé pour une position modifiable.
+Voir l'[exemple autonome](exemples/06_objets_modifiables.cpp).
+
 ## Réutiliser une référence préparée
 
 Quand le même objet est traité plusieurs fois, son type peut être validé une
@@ -99,6 +122,13 @@ compilation. L'appel préparé réutilise directement les indices. La référenc
 ne possède pas l'objet : celui-ci doit rester vivant à la même adresse, avec
 le même type dynamique. Un remplacement de l'objet exige une nouvelle préparation.
 Les changements de ses données restent visibles.
+
+Une position constante produit `reference_preparee<Base, Liste>`, comme auparavant.
+Une position modifiable produit `reference_preparee<Base, Liste, true>` et exige
+un objet modifiable. Cette dernière se convertit implicitement vers la référence
+constante de même racine et de même liste ; la conversion inverse est interdite.
+Le `const` appliqué au descripteur préparé lui-même ne change pas les droits
+d'accès à l'objet : un descripteur modifiable constant permet encore la mutation.
 
 La racine et la liste ordonnée des types font partie du type de la référence.
 Elle peut servir à plusieurs méthodes compatibles et reste utilisable après
@@ -298,6 +328,7 @@ du compilateur, de la taille du domaine et de la réutilisation des références
 | 3 | [Double dispatch](exemples/03_dispatch_double.cpp) | Sélection par une paire ordonnée de types |
 | 4 | [Ambiguïté résolue](exemples/04_ambiguite_resolue.cpp) | Ajout de l'intersection qui départage deux spécialisations |
 | 5 | [Arguments ordinaires](exemples/05_arguments_ordinaires.cpp) | Transmission d'un montant et d'un flux, avec objet brut ou référence préparée |
+| 6 | [Objets modifiables](exemples/06_objets_modifiables.cpp) | Mutation de l'objet et réutilisation d'une référence préparée en lecture seule |
 
 Chaque exemple est autonome et retourne un code d'échec si son résultat est
 incorrect. Les deux implémentations couvrent toute cette progression, du
@@ -385,8 +416,10 @@ refusé même si une spécialisation de sa base pourrait le traiter.
 
 ## Contrat et limites
 
-- Une ou deux positions polymorphes, toutes sous forme `const Classe&`.
-  Elles n'acceptent ni pointeur nullable ni référence mutable.
+- Une ou deux positions polymorphes, sous forme `Classe&` ou `const Classe&`.
+  Chaque spécialisation conserve la qualification de la position ; aucun repli
+  constant n'est admis sur une position modifiable. Les valeurs, pointeurs,
+  références rvalue et références `volatile` ne sont pas acceptés à ces positions.
 - Un nombre quelconque d'arguments ordinaires, décrits par `argument_ordinaire`,
   avec exactement le même type dans toutes les spécialisations. Ils peuvent
   être mutables ou nullables selon leur type C++ ; ils ne sont pas indexés.
@@ -403,7 +436,7 @@ refusé même si une spécialisation de sa base pourrait le traiter.
 - Les appelables sont possédés par valeur et peuvent être seulement déplaçables.
   Les objets et les captures par référence doivent rester vivants pendant l'appel.
 - L'appel est non `const` pour permettre les captures mutables. Le partage entre
-  threads exige que les appelables et les données capturées soient sûrs, ou une
+  threads exige que les appelables, les objets traités et les données capturées soient sûrs, ou une
   synchronisation externe.
 - Pas de découverte automatique des classes, de greffons, de `next`,
   de désenregistrement, ni d'optimisation des tables clairsemées.

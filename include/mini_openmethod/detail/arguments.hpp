@@ -16,15 +16,19 @@ inline constexpr bool descripteur_valide<argument_ordinaire> = true;
 /** Contrat d'une position polymorphe et type attendu par l'appel prepare. */
 template<class Argument, class Descripteur>
 struct parametre {
-    static_assert(reference_constante<Argument>,
-                  "La signature exige des references constantes vers des classes");
+    static_assert(reference_classe<Argument>,
+                  "La signature exige des references lvalue non volatiles vers des classes");
     using base = std::remove_cvref_t<Argument>;
+    using objet = std::remove_reference_t<Argument>;
+    static constexpr bool modifiable = !std::is_const_v<objet>;
     static_assert(std::is_polymorphic_v<base>, "Les bases doivent etre polymorphes");
     static_assert(traits_liste<Descripteur>::template valide<base>,
                   "Domaine invalide : types uniques, non qualifies, publics et non ambigus requis");
-    using prepare = const reference_preparee<base, Descripteur>&;
+    using reference = reference_preparee<base, Descripteur, modifiable>;
+    using prepare = const reference&;
     template<class Specialise>
-    static constexpr bool accepte = reference_constante<Specialise>
+    static constexpr bool accepte = reference_classe<Specialise>
+        && (std::is_const_v<std::remove_reference_t<Specialise>> == std::is_const_v<objet>)
         && std::derived_from<std::remove_cvref_t<Specialise>, base>;
 };
 

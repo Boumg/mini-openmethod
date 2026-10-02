@@ -12,10 +12,9 @@
 
 /** @file Assistants internes d'analyse des signatures et des listes de types. */
 namespace mini_openmethod::detail {
-/** Reference constante non volatile vers une classe. */
+/** Reference lvalue non volatile vers une classe, constante ou modifiable. */
 template<class Type>
-concept reference_constante = std::is_lvalue_reference_v<Type>
-    && std::is_const_v<std::remove_reference_t<Type>>
+concept reference_classe = std::is_lvalue_reference_v<Type>
     && !std::is_volatile_v<std::remove_reference_t<Type>>
     && std::is_class_v<std::remove_cvref_t<Type>>;
 /** Indique si les traits peuvent extraire une signature unique. */
