@@ -1,13 +1,11 @@
 #include "objets_appels.hpp"
+#include "arguments_mesures.hpp"
 #include <mini_openmethod/methode.hpp>
 #include <algorithm>
-#include <charconv>
 #include <chrono>
 #include <iomanip>
 #include <iostream>
-#include <limits>
 #include <stdexcept>
-#include <string_view>
 #include <utility>
 
 /** @file Reference ponctuelle : appels directs, virtuels et methodes externes. */
@@ -90,27 +88,14 @@ void mesurer(std::size_t iterations, std::uint32_t graine, std::index_sequence<R
     }
 }
 
-std::uint64_t lire_entier(std::string_view texte) {
-    std::uint64_t valeur = 0;
-    const auto [fin, erreur] = std::from_chars(texte.data(), texte.data() + texte.size(), valeur);
-    if (erreur != std::errc{} || fin != texte.data() + texte.size())
-        throw std::invalid_argument("Un entier positif est attendu");
-    return valeur;
-}
 } // namespace comparaison_appels
 
 int main(int nombre_arguments, char** arguments) {
     try {
         using namespace comparaison_appels;
         // Une execution sans argument verifie seulement : les mesures sont explicites.
-        const bool verifier = nombre_arguments == 1
-            || (nombre_arguments == 2 && std::string_view(arguments[1]) == "--verifier");
-        const auto iterations = verifier ? 0 : lire_entier(arguments[1]);
-        const auto graine = nombre_arguments > 2 ? lire_entier(arguments[2]) : 42;
-        if (nombre_arguments > 3 || (!verifier && iterations == 0)
-            || iterations > std::numeric_limits<std::size_t>::max()
-            || graine > std::numeric_limits<std::uint32_t>::max())
-            throw std::invalid_argument("Usage : comparer_appels [iterations>0] [graine32] ou --verifier");
+        const auto [iterations, graine] = mesures::lire_arguments(
+            nombre_arguments, arguments, mesures::Mode_verification::par_defaut);
         std::cout << std::unitbuf << std::fixed << std::setprecision(3);
 #if defined(__clang__)
         std::cout << "Compilateur=Clang " << __clang_version__ << '\n';
@@ -129,11 +114,9 @@ int main(int nombre_arguments, char** arguments) {
         std::cout << "Types;Direct visible ns/appel;Direct separe ns/appel;Virtuel ns/appel;"
                      "Mini visible ns/appel;Mini visible prepare ns/appel;"
                      "Mini separe ns/appel;Mini separe prepare ns/appel;Somme\n";
-        const auto nombre = static_cast<std::size_t>(iterations);
-        const auto graine32 = static_cast<std::uint32_t>(graine);
-        mesurer(nombre, graine32, std::make_index_sequence<1>{});
-        mesurer(nombre, graine32, std::make_index_sequence<2>{});
-        mesurer(nombre, graine32, std::make_index_sequence<8>{});
+        mesurer(iterations, graine, std::make_index_sequence<1>{});
+        mesurer(iterations, graine, std::make_index_sequence<2>{});
+        mesurer(iterations, graine, std::make_index_sequence<8>{});
     } catch (const std::exception& erreur) {
         std::cerr << erreur.what() << '\n';
         return 1;

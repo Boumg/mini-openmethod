@@ -82,6 +82,13 @@ if(MINI_OPENMETHOD_TESTS)
         add_test(NAME equivalence_appels COMMAND comparer_appels --verifier)
     endif()
 endif()
+    foreach(banc IN ITEMS mesurer_dispatch comparer_appels comparer_boost)
+        if(TARGET ${banc})
+            add_test(NAME refus_argument_negatif_${banc}
+                COMMAND ${CMAKE_COMMAND} "-DPROGRAMME=$<TARGET_FILE:${banc}>"
+                    -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/verifier_argument_banc.cmake")
+        endif()
+    endforeach()
 if(MINI_OPENMETHOD_EXEMPLES)
     foreach(etape IN ITEMS 01_dispatch_simple 02_heritage 03_dispatch_double 04_ambiguite_resolue
                            05_arguments_ordinaires 06_objets_modifiables)

@@ -2,7 +2,7 @@ find_package(doctest CONFIG REQUIRED)
 include("${doctest_DIR}/doctest.cmake")
 
 add_executable(tests_mini_openmethod lanceur_tests.cpp
-    test_methode.cpp test_arguments.cpp test_objets_modifiables.cpp
+    test_methode.cpp test_arguments.cpp test_objets_modifiables.cpp test_arguments_mesures.cpp
     test_indexation.cpp test_traits.cpp test_domaines.cpp test_resolution.cpp)
 configurer_executable(tests_mini_openmethod)
 target_link_libraries(tests_mini_openmethod PRIVATE doctest::doctest)

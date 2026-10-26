@@ -1,3 +1,4 @@
+#include "arguments_mesures.hpp"
 #include <mini_openmethod/methode.hpp>
 #include <algorithm>
 #include <array>
@@ -6,7 +7,6 @@
 #include <iostream>
 #include <random>
 #include <stdexcept>
-#include <string>
 #include <string_view>
 
 /** @file Mesure indicative : entrees melangees, resultats controles et mediane de cinq passages. */
@@ -41,10 +41,9 @@ void mesurer(std::string_view nom, std::size_t iterations, Appel appel, Attendu 
 
 int main(int nombre_arguments, char** arguments) {
     try {
-        const auto iterations = nombre_arguments > 1 ? std::stoull(arguments[1]) : 5'000'000ULL;
-        const auto graine = nombre_arguments > 2 ? std::stoul(arguments[2]) : 42UL;
-        if (iterations == 0) throw std::runtime_error("Le nombre d'iterations doit etre positif");
-        std::mt19937 generateur(static_cast<std::uint32_t>(graine));
+        const auto [iterations, graine] = mesures::lire_arguments(
+            nombre_arguments, arguments, mesures::Mode_verification::indisponible);
+        std::mt19937 generateur(graine);
         std::array<unsigned, taille_sequence> choix{};
         for (auto& valeur : choix) valeur = static_cast<unsigned>(generateur() % 4);
         Chien chien;

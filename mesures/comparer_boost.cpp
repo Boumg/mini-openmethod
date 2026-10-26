@@ -1,14 +1,13 @@
 #include "jeux_comparaison.hpp"
+#include "arguments_mesures.hpp"
 #include <mini_openmethod/methode.hpp>
 #include <boost/openmethod/core.hpp>
 #include <boost/openmethod/initialize.hpp>
 #include <boost/version.hpp>
 #include <algorithm>
-#include <charconv>
 #include <chrono>
 #include <iomanip>
 #include <iostream>
-#include <limits>
 #include <stdexcept>
 #include <string_view>
 #include <tuple>
@@ -221,28 +220,14 @@ void comparer_ordinaires(std::size_t iterations, std::uint32_t graine, std::inde
         [&](std::size_t indice) { return Prepare::fn(contexte, pointeurs[indice], static_cast<int>(indice)); });
 }
 
-std::uint64_t lire_entier(std::string_view texte) {
-    std::uint64_t valeur = 0;
-    const auto [fin, erreur] = std::from_chars(texte.data(), texte.data() + texte.size(), valeur);
-    if (erreur != std::errc{} || fin != texte.data() + texte.size())
-        throw std::invalid_argument("Un entier positif est attendu");
-    return valeur;
-}
 } // namespace comparaison
 
 int main(int nombre_arguments, char** arguments) {
     try {
         std::cout << std::unitbuf;
         using namespace comparaison;
-        const bool verification = nombre_arguments == 2 && std::string_view(arguments[1]) == "--verifier";
-        const auto nombre = verification ? 0 : nombre_arguments > 1 ? lire_entier(arguments[1]) : 5'000'000;
-        const auto graine = nombre_arguments > 2 ? lire_entier(arguments[2]) : 42;
-        if (nombre_arguments > 3 || (!verification && nombre == 0)
-            || nombre > std::numeric_limits<std::size_t>::max()
-            || graine > std::numeric_limits<std::uint32_t>::max())
-            throw std::invalid_argument("Usage : comparer_boost [iterations>0] [graine32] ou --verifier");
-        const auto iterations = static_cast<std::size_t>(nombre);
-        const auto graine32 = static_cast<std::uint32_t>(graine);
+        const auto [iterations, graine] = mesures::lire_arguments(
+            nombre_arguments, arguments, mesures::Mode_verification::explicite);
         std::cout << "Boost=" << BOOST_LIB_VERSION << ";reflexion=" << MINI_OPENMETHOD_REFLEXION
                   << ";iterations=" << iterations << ";graine=" << graine << ";passages=" << repetitions << '\n';
 #if defined(__clang__)
@@ -259,13 +244,13 @@ int main(int nombre_arguments, char** arguments) {
 #endif
         std::cout << "Cas;Types par position;Mini ns/appel;Mini prepare ns/appel;Boost reference ns/appel;Boost prepare ns/appel;Somme\n"
                   << std::fixed << std::setprecision(3);
-        comparer_simple<2, false>(iterations, graine32, std::make_index_sequence<2>{});
-        comparer_simple<8, false>(iterations, graine32, std::make_index_sequence<8>{});
-        comparer_simple<32, false>(iterations, graine32, std::make_index_sequence<32>{});
-        comparer_double<2>(iterations, graine32, std::make_index_sequence<2>{}, std::make_index_sequence<4>{});
-        comparer_double<8>(iterations, graine32, std::make_index_sequence<8>{}, std::make_index_sequence<64>{});
-        comparer_simple<2, true>(iterations, graine32, std::make_index_sequence<2>{});
-        comparer_ordinaires<2>(iterations, graine32, std::make_index_sequence<2>{});
+        comparer_simple<2, false>(iterations, graine, std::make_index_sequence<2>{});
+        comparer_simple<8, false>(iterations, graine, std::make_index_sequence<8>{});
+        comparer_simple<32, false>(iterations, graine, std::make_index_sequence<32>{});
+        comparer_double<2>(iterations, graine, std::make_index_sequence<2>{}, std::make_index_sequence<4>{});
+        comparer_double<8>(iterations, graine, std::make_index_sequence<8>{}, std::make_index_sequence<64>{});
+        comparer_simple<2, true>(iterations, graine, std::make_index_sequence<2>{});
+        comparer_ordinaires<2>(iterations, graine, std::make_index_sequence<2>{});
     } catch (const std::exception& erreur) {
         std::cerr << erreur.what() << '\n';
         return 1;
