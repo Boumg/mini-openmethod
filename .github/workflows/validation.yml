@@ -9,11 +9,18 @@ jobs:
     steps:
       - name: Recuperer les sources
         uses: actions/checkout@v4
+      - name: Lire la revision de vcpkg
+        id: vcpkg
+        shell: pwsh
+        run: |
+          $revision = (Get-Content -Raw vcpkg.json | ConvertFrom-Json).'builtin-baseline'
+          if ($revision -notmatch '^[0-9a-fA-F]{40}$') { throw 'Revision vcpkg invalide' }
+          "revision=$revision" >> $env:GITHUB_OUTPUT
       - name: Recuperer la version de vcpkg du manifeste
         uses: actions/checkout@v4
         with:
           repository: microsoft/vcpkg
-          ref: eb2d3a3279fd019cb7733072d86900d0ad2a1aef
+          ref: ${{ steps.vcpkg.outputs.revision }}
           path: build-vcpkg
       - name: Preparer vcpkg
         run: ./build-vcpkg/bootstrap-vcpkg.sh -disableMetrics
@@ -42,11 +49,18 @@ jobs:
     steps:
       - name: Recuperer les sources
         uses: actions/checkout@v4
+      - name: Lire la revision de vcpkg
+        id: vcpkg
+        shell: pwsh
+        run: |
+          $revision = (Get-Content -Raw vcpkg.json | ConvertFrom-Json).'builtin-baseline'
+          if ($revision -notmatch '^[0-9a-fA-F]{40}$') { throw 'Revision vcpkg invalide' }
+          "revision=$revision" >> $env:GITHUB_OUTPUT
       - name: Recuperer la version de vcpkg du manifeste
         uses: actions/checkout@v4
         with:
           repository: microsoft/vcpkg
-          ref: eb2d3a3279fd019cb7733072d86900d0ad2a1aef
+          ref: ${{ steps.vcpkg.outputs.revision }}
           path: build-vcpkg
       - name: Preparer vcpkg sous Linux
         if: runner.os == 'Linux'
@@ -88,9 +102,16 @@ jobs:
     steps:
       - name: Recuperer les sources
         uses: actions/checkout@v4
-      - name: Construire la chaine reproductible
-        run: docker build -f outils/Dockerfile.gcc -t mini-openmethod-gcc:16.2 outils
-      - name: Verifier les trois selections et mesurer le dispatch
+      - name: Lire la revision de vcpkg
+        id: vcpkg
+        shell: pwsh
+        run: |
+          $revision = (Get-Content -Raw vcpkg.json | ConvertFrom-Json).'builtin-baseline'
+          if ($revision -notmatch '^[0-9a-fA-F]{40}$') { throw 'Revision vcpkg invalide' }
+          "revision=$revision" >> $env:GITHUB_OUTPUT
+      - name: Construire la chaine GCC
+        run: docker build -f outils/Dockerfile.gcc --build-arg VCPKG_REVISION=${{ steps.vcpkg.outputs.revision }} -t mini-openmethod-gcc:16.2 outils
+      - name: Verifier les trois selections sans chronometrage
         run: |
           mkdir -p build-gcc
           docker run --rm --mount "type=bind,source=$PWD,target=/sources,readonly" \
@@ -115,5 +136,4 @@ jobs:
             build-gcc/*/configuration.log
             build-gcc/*/tests.log
             build-gcc/*/installation-*.log
-            build-gcc/*/compilation.txt
-            build-gcc/*/mesures.txt
+            build-gcc/*/compilation.log

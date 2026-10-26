@@ -1,6 +1,18 @@
 #!/usr/bin/env bash
 # Execute dans le conteneur ; les resultats sont conserves sur le montage /resultats.
 set -euo pipefail
+mesurer=false
+if [ "$#" -gt 0 ]; then
+    if [ "$#" -ne 1 ] || [ "$1" != --mesurer ]; then
+        printf '%s\n' 'Usage : verifier-gcc.sh [--mesurer]' >&2
+        exit 2
+    fi
+    mesurer=true
+fi
+options_configuration=()
+if "$mesurer"; then
+    options_configuration+=(--fresh)
+fi
 g++ --version
 "$VCPKG_ROOT/vcpkg" install --triplet x64-linux --x-feature=tests \
     --x-manifest-root=/sources --x-install-root=/resultats/vcpkg_installed
@@ -16,13 +28,19 @@ for configuration in cpp23:OFF cpp26:ON auto:AUTO; do
     if [ "$mode" = OFF ]; then attendu=0; fi
     dossier="/resultats/$nom"
     mkdir -p "$dossier"
-    cmake --fresh -S /sources -B "$dossier" -G Ninja -DCMAKE_BUILD_TYPE=Release \
+    cmake "${options_configuration[@]}" -S /sources -B "$dossier" -G Ninja -DCMAKE_BUILD_TYPE=Release \
         "${options_vcpkg[@]}" \
         -DMINI_OPENMETHOD_REFLEXION="$mode" -DMINI_OPENMETHOD_REFLEXION_ATTENDUE="$attendu" \
-        -DMINI_OPENMETHOD_MESURES=ON 2>&1 | tee "$dossier/configuration.log"
-    /usr/bin/time -f 'Compilation : %e s ; memoire maximale processus enfant : %M Ko' \
-        -o "$dossier/compilation.txt" \
-        cmake --build "$dossier" --clean-first --parallel 2 2>&1 | tee "$dossier/compilation.log"
+        -DMINI_OPENMETHOD_MESURES=ON -DMINI_OPENMETHOD_COMPARAISON_BOOST=OFF \
+        -DMINI_OPENMETHOD_TESTS=ON -DMINI_OPENMETHOD_EXEMPLES=ON 2>&1 | tee "$dossier/configuration.log"
+    # Les bancs sont compiles pour conserver leurs controles --verifier dans CTest.
+    if "$mesurer"; then
+        /usr/bin/time -f 'Compilation : %e s ; memoire maximale processus enfant : %M Ko' \
+            -o "$dossier/compilation.txt" \
+            cmake --build "$dossier" --clean-first --parallel 2 2>&1 | tee "$dossier/compilation.log"
+    else
+        cmake --build "$dossier" --parallel 2 2>&1 | tee "$dossier/compilation.log"
+    fi
     ctest --test-dir "$dossier" --output-on-failure --parallel 2 2>&1 | tee "$dossier/tests.log"
     cmake --install "$dossier" --prefix "$dossier/installation"
     # Le choix du consommateur doit etre independant du producteur, meme apres reconfiguration.
@@ -38,7 +56,9 @@ for configuration in cpp23:OFF cpp26:ON auto:AUTO; do
         ctest --test-dir "$dossier/consommateur" --output-on-failure 2>&1 \
             | tee "$dossier/installation-$mode_consommateur.log"
     done
-    "$dossier/mesurer_dispatch" 5000000 42 | tee "$dossier/mesures.txt"
+    if "$mesurer"; then
+        "$dossier/mesurer_dispatch" 5000000 42 | tee "$dossier/mesures.txt"
+    fi
 done
 # Un compilateur capable de reflexion doit aussi respecter le choix explicite C++23.
 g++ -std=c++26 -freflection -DMINI_OPENMETHOD_REFLEXION=0 -DMINI_OPENMETHOD_REFLEXION_ATTENDUE=0 \
