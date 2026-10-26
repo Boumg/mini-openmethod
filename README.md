@@ -92,6 +92,7 @@ ou davantage. Ces évolutions ne sont pas encore disponibles.
 
 ## Licence et versions
 
+La première version publiée est [0.1.0](https://github.com/Boumg/mini-openmethod/releases/tag/v0.1.0).
 Le projet est distribué sous [Boost Software License 1.0](LICENSE.md).
 Le [journal des modifications](CHANGELOG.md) présente les évolutions et les
 règles de compatibilité des versions `0.x`.

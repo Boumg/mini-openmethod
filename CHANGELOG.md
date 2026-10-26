@@ -2,7 +2,7 @@
 
 [Présentation](README.md) · [Documentation](documentation/README.md)
 
-## Non publié — préparation de 0.1.0
+## 0.1.0 — 26 octobre 2026
 
 ### Fonctionnalités
 
