@@ -13,13 +13,14 @@ if(MINI_OPENMETHOD_COMPARAISON_BOOST)
     list(APPEND VCPKG_MANIFEST_FEATURES comparaison-boost)
 endif()
 project(mini_openmethod VERSION 0.1.0 LANGUAGES CXX)
+include(GNUInstallDirs)
 
 add_library(mini_openmethod INTERFACE)
 add_library(mini_openmethod::mini_openmethod ALIAS mini_openmethod)
 target_compile_features(mini_openmethod INTERFACE cxx_std_23)
 target_include_directories(mini_openmethod INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>)
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
 find_package(Boost 1.92 CONFIG REQUIRED COMPONENTS callable_traits mp11)
 target_link_libraries(mini_openmethod INTERFACE Boost::callable_traits Boost::mp11)
@@ -100,17 +101,17 @@ if(MINI_OPENMETHOD_EXEMPLES)
     endforeach()
 endif()
 
-include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 install(TARGETS mini_openmethod EXPORT mini_openmethodCibles)
-install(DIRECTORY include/ DESTINATION include)
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(FILES LICENSE.md DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/mini_openmethod)
 install(EXPORT mini_openmethodCibles NAMESPACE mini_openmethod::
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/mini_openmethod)
 configure_package_config_file(cmake/mini_openmethodConfig.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/mini_openmethodConfig.cmake
     INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/mini_openmethod)
 write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/mini_openmethodConfigVersion.cmake
-    VERSION ${PROJECT_VERSION} COMPATIBILITY SameMajorVersion)
+    VERSION ${PROJECT_VERSION} COMPATIBILITY SameMinorVersion ARCH_INDEPENDENT)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/mini_openmethodConfig.cmake
     ${CMAKE_CURRENT_BINARY_DIR}/mini_openmethodConfigVersion.cmake
     cmake/choisir_implementation.cmake

@@ -1,6 +1,7 @@
 {
   "name": "mini-openmethod",
   "version": "0.1.0",
+  "license": "BSL-1.0",
   "description": "Methodes externes C++23 avec les traits Boost et comparaison facultative avec Boost.OpenMethod",
   "builtin-baseline": "eb2d3a3279fd019cb7733072d86900d0ad2a1aef",
   "dependencies": [

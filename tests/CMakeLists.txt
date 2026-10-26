@@ -29,6 +29,12 @@ target_compile_definitions(tests_detection PRIVATE
     MINI_OPENMETHOD_REFLEXION_ATTENDUE=${MINI_OPENMETHOD_REFLEXION_ATTENDUE})
 add_test(NAME detection_sans_cmake COMMAND tests_detection)
 
+add_test(NAME compatibilite_paquet
+    COMMAND ${CMAKE_COMMAND}
+        "-DFICHIER_VERSION=${PROJECT_BINARY_DIR}/mini_openmethodConfigVersion.cmake"
+        "-DVERSION_PROJET=${PROJECT_VERSION}"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/verifier_version_paquet.cmake")
+
 function(ajouter_refus nom motif)
     set(arguments_generateur -G "${CMAKE_GENERATOR}")
     if(CMAKE_GENERATOR_PLATFORM)
