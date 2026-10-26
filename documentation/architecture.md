@@ -1,5 +1,12 @@
 # Architecture et choix de conception
 
+[Sommaire](README.md)
+
+Cette page sert de référence pour lire ou modifier l'implémentation. Pour une
+première approche, commencer par les [tables expliquées avec des schémas](tables_dispatch.md).
+Le [guide d'utilisation](utilisation.md) présente l'API sans les détails internes.
+La [référence API](reference.md) rassemble son contrat et les diagnostics.
+
 ## Organisation des en-têtes
 
 - `mini_openmethod/domaines.hpp` déclare `liste_types`, `argument_ordinaire`, `domaines` et l'exception
@@ -379,6 +386,11 @@ assemblés au point de composition. Les classes du domaine n'ont pas besoin de
 connaître ces traitements. En revanche, cette composition doit être recompilée
 pour intégrer une nouvelle spécialisation ou un nouveau type.
 
+La [feuille de route](evolutions.md) propose notamment d'hériter d'un domaine et
+de ses méthodes. Cette extension resterait une composition fermée, revalidée à
+la compilation, avec un parent inchangé ; elle est distincte du registre ouvert
+décrit ci-dessous et n'est pas encore implémentée.
+
 Un registre ouvert serait un second moteur, avec des garanties différentes :
 enregistrement explicite, résolution au chargement, erreurs d'ambiguïté tardives,
 synchronisation, et règles de durée de vie pour le déchargement des greffons.
@@ -444,6 +456,15 @@ Les tests de compilation refusée contrôlent un fragment précis du diagnostic.
 Ils ne peuvent pas réussir simplement parce que l'en-tête est absent ou qu'une
 erreur de syntaxe empêche toute compilation. Les cas d'ambiguïté n'appellent pas
 la méthode, afin de vérifier que la construction suffit à valider le domaine.
+Le pointeur de fonction membre fourni directement est également refusé à ce
+stade ; une lambda capturant son objet sert d'adaptateur.
+
+`test_arguments_mesures.cpp` contrôle la lecture commune des paramètres des bancs,
+sans chronométrage. Lorsque les bancs sont construits, un test vérifie aussi
+que chaque exécutable refuse un nombre d'itérations négatif avec le bon message.
+Le test CMake `compatibilite_paquet` exerce le fichier de version distribué :
+compatibilité entre correctifs d'une même mineure et indépendance du contrôle
+vis-à-vis de la taille des pointeurs. Ce dernier contrôle ne compile pas en 32 bits.
 
 La CI vérifie le repli `AUTO` avec GCC 13, Clang 18 et MSVC. Le conteneur GCC 16.2
 exécute la même suite dans les modes `OFF`, `ON` et `AUTO`, avec contrôle du
@@ -457,6 +478,8 @@ aussi le paquet produit avec réflexion sous GCC 16.2 depuis GCC 13 en `AUTO`
 et `OFF`, afin de vérifier la portabilité de l'export entre compilateurs.
 Les [mesures de performance](performances.md) sont
 indicatives et n'imposent aucun seuil de temps aux tests.
+Le script GCC valide sans chronométrage par défaut ; `--mesurer` active
+explicitement une reconstruction propre et les mesures.
 
 Lorsque `MINI_OPENMETHOD_COMPARAISON_BOOST=ON`, le test `equivalence_boost`
 vérifie sept scénarios sur 4 096 entrées chacun, avec des résultats attendus

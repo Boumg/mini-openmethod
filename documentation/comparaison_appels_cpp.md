@@ -1,5 +1,7 @@
 # Fonctions non virtuelles, virtuelles et mini-openmethod
 
+[Sommaire](README.md)
+
 Cette page conserve une **référence mesurée le 2 octobre 2026**. Elle se consulte
 sans reconstruire le projet ni refaire les chronométrages. Les nombres décrivent
 ce banc, cette machine et ces compilateurs ; ils ne sont pas des garanties de
@@ -20,6 +22,10 @@ du type dynamique de l'objet. Ces règles viennent du
 Une seule fonction virtuelle ne réalise pas le double dispatch sur deux objets :
 un visiteur, deux appels virtuels ou un autre mécanisme seraient nécessaires.
 Ce banc compare donc uniquement le **dispatch simple**.
+
+La [comparaison avec Visitor](comparaison_visitor.md) explique séparément
+l'organisation des opérations et le découplage des classes ; ce banc ne mesure
+pas Visitor.
 
 Le chemin machine typique d'un appel virtuel non dévirtualisé charge une cible
 dans la table virtuelle, puis l'appelle indirectement. Un appel mini-openmethod

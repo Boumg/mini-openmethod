@@ -1,5 +1,7 @@
 # Simplicité et performance des deux versions
 
+[Sommaire](README.md)
+
 La comparaison avec Boost.OpenMethod, installé par vcpkg, dispose de son
 [protocole et de ses résultats](comparaison_boost.md). Le tableau ci-dessous
 conserve la mesure antérieure de l'optimisation des conversions.
@@ -234,14 +236,22 @@ réflexion à l'exécution ; l'héritage virtuel conserve son coût RTTI.
 Depuis PowerShell, avec Docker Desktop démarré :
 
 ```powershell
-./outils/verifier-gcc.ps1
+./outils/verifier-gcc.ps1 -Mesurer
 ```
 
-Le script compile proprement et teste `OFF`, `ON` et `AUTO`. Il vérifie aussi
+L'option `-Mesurer` active les chronométrages ; sans elle, le script valide
+uniquement le fonctionnement. Dans le conteneur, l'option correspondante est
+`bash /sources/outils/verifier-gcc.sh --mesurer`.
+
+Le mode mesure compile proprement et teste `OFF`, `ON` et `AUTO`. Il vérifie aussi
 un consommateur de chaque installation. Les résultats sont enregistrés dans
 `build-gcc/<mode>/mesures.txt`. `configuration.log` indique le choix effectif,
-`tests.log` et `installation.log` les validations, `compilation.txt` la durée
-de compilation et la mémoire maximale d'un processus enfant.
+`tests.log` les tests du projet et `installation-OFF.log`, `installation-ON.log`,
+`installation-AUTO.log` ceux du consommateur. `compilation.txt` contient la durée
+de compilation et la mémoire maximale d'un processus enfant. Le dernier passage
+`OFF` du consommateur remplace le premier journal `installation-OFF.log`.
+Une validation sans mesure ne remplace pas `compilation.txt` ni `mesures.txt` :
+ces fichiers restent ceux du dernier passage avec l'option de mesure.
 
 La durée mesurée concerne tous les exemples, tests et le programme de mesure,
 hors configuration et tests de compilation refusée. Elle dépend des caches
@@ -259,6 +269,10 @@ cmake --build build-mesures --config Release --target mesurer_dispatch
 
 Exécuter ensuite `build-mesures/mesurer_dispatch 5000000 42`, ou
 `build-mesures/Release/mesurer_dispatch.exe 5000000 42` avec Visual Studio.
+Les bancs acceptent au plus deux paramètres numériques, sous forme d'entiers
+décimaux complets : un nombre d'itérations strictement positif et une graine
+comprise entre 0 et 4 294 967 295. Les modes `--verifier` de `comparer_appels`
+et de `comparer_boost` restent disponibles pour les contrôles sans chronométrage.
 Utiliser des dossiers distincts avec `OFF` et `ON` pour comparer les deux
 générateurs sur une chaîne possédant la réflexion.
 

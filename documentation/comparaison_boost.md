@@ -1,5 +1,7 @@
 # Comparaison avec Boost.OpenMethod et vcpkg
 
+[Sommaire](README.md)
+
 L'indexation optimisée réduit fortement le coût des appels de mini-openmethod.
 À 32 types, l'appel ordinaire rejoint l'ordre de grandeur de Boost.OpenMethod ;
 une référence préparée réduit encore le coût des deux bibliothèques.
@@ -41,7 +43,7 @@ les égalités RTTI ; les quatre autres colonnes proviennent du banc actualisé.
 | Double | 8 | 77,76 | 6,50 | 6,73 | 13,49 | 7,22 |
 | Héritage virtuel | 2 | 13,33 | 9,06 | 4,25 | 10,35 | 7,30 |
 
-Sorties complètes actuelles : [MSVC](resultats/boost_msvc_optimise.txt) et
+Sorties complètes de cette série : [MSVC](resultats/boost_msvc_optimise.txt) et
 [Clang](resultats/boost_clang_optimise.txt). Les sorties antérieures restent
 conservées : [MSVC avant](resultats/boost_msvc.txt) et
 [Clang avant](resultats/boost_clang.txt).
@@ -58,12 +60,14 @@ Lors de ces mesures, les 22 tests passaient avec chacun des deux compilateurs, d
 d'équivalence des six scénarios et les nouveaux tests de préparation.
 GCC 16.2 validait aussi les 21 tests sans Boost.OpenMethod en C++23, et 22 en réflexion C++26
 et en sélection automatique, ainsi qu'un consommateur de chaque installation.
-Le test supplémentaire vérifie un domaine 16 × 16 avec 256 spécialisations.
+Le test supplémentaire vérifiait un domaine 16 × 16 avec 256 spécialisations.
 
-Après migration vers doctest, CTest distingue chaque scénario nommé : la validation
-locale compte 32 tests sous MSVC et Clang avec Boost.OpenMethod, 31 sous GCC en C++23
-et 32 sous GCC en réflexion ou en sélection automatique. Cette différence de compte
-reflète le découpage des scénarios ; elle ne représente pas autant de nouveaux cas couverts.
+Lors de la migration vers doctest, CTest a commencé à distinguer chaque scénario
+nommé : la validation consignée à cette étape comptait 32 tests sous MSVC et Clang
+avec Boost.OpenMethod, 31 sous GCC en C++23 et 32 sous GCC en réflexion ou en
+sélection automatique. Cette différence reflétait le découpage des scénarios,
+pas autant de nouveaux cas couverts. Ces comptes sont historiques et ne décrivent
+pas la suite de tests actuelle.
 
 ## Arguments ordinaires : validation du 2 octobre 2026
 
@@ -137,12 +141,13 @@ différentes. Les temps du projet complet incluent désormais des tests et un
 exemple supplémentaires : ils ne mesurent pas isolément le coût de compilation
 de la nouvelle API.
 
-La validation locale couvre MSVC Debug/Release et Clang en C++23 (49 tests par
+La validation du 2 octobre 2026 couvrait MSVC Debug/Release et Clang en C++23 (49 tests par
 configuration), GCC `OFF` (48 tests), `ON` et `AUTO` (49 tests chacun), ainsi
 que les deux tests du consommateur installé pour les trois modes GCC, MSVC et
-Clang. Les modes réfléchis construisent la table 16 × 16 avec un montant
-intercalé, sans relever les limites `constexpr`. La CI ajoute également Debug
-à la validation MSVC ; aucun test ne dépend d'un seuil temporel.
+Clang. Les modes réfléchis construisaient la table 16 × 16 avec un montant
+intercalé, sans relever les limites `constexpr`. La CI ajoutait également Debug
+à la validation MSVC ; aucun test ne dépendait d'un seuil temporel. Ces comptes
+décrivent cette validation datée, avant les ajouts ultérieurs à la suite.
 
 ## Ce qui est mesuré
 
