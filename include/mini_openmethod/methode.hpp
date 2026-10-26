@@ -38,8 +38,11 @@ class methode<Retour(Arguments...), domaines<Listes...>, Fonctions...> {
     static constexpr std::size_t arite = positions_polymorphes::size();
     static constexpr std::size_t arite_totale = sizeof...(Arguments);
     static constexpr std::size_t nombre_fonctions = sizeof...(Fonctions);
+    static constexpr bool sans_pointeur_membre = (!std::is_member_function_pointer_v<Fonctions> && ...);
     static_assert(arite == 1 || arite == 2, "Une ou deux positions polymorphes sont requises");
     static_assert(nombre_fonctions > 0, "Au moins une specialisation est requise");
+    static_assert(sans_pointeur_membre,
+                  "Un pointeur de fonction membre doit etre adapte par une lambda capturant son objet");
     static_assert((detail::fonction_analysee<Fonctions> && ...),
                   "Une signature explicite de lambda ou de fonction est requise");
     using tuple_arguments = std::tuple<Arguments...>;
@@ -72,7 +75,7 @@ class methode<Retour(Arguments...), domaines<Listes...>, Fonctions...> {
     }
     static constexpr auto dimensions = dimensions_domaines(positions_polymorphes{});
     static consteval auto resoudre() {
-        if constexpr (arite >= 1 && arite <= 2 && nombre_fonctions > 0
+        if constexpr (arite >= 1 && arite <= 2 && nombre_fonctions > 0 && sans_pointeur_membre
                       && (fonction_valide<Fonctions>(positions{}) && ...))
             return detail::resolution<typename description::domaines_polymorphes,
                 std::tuple<typename description::template signature<Fonctions>...>>::indices;
