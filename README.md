@@ -6,8 +6,9 @@ sans macro de déclaration.
 
 On peut ainsi ajouter de nouveaux traitements sans modifier les classes du
 domaine : elles ne connaissent ni ces opérations, ni la bibliothèque.
-La [comparaison avec Visitor](documentation/comparaison_visitor.md) montre ce
-découplage et les différences entre les deux approches.
+La [comparaison avec Visitor et `std::visit`](documentation/comparaison_visitor.md)
+présente ce découplage, les variantes avec `std::variant` et les différences
+entre leurs mécanismes de sélection.
 
 La limite porte sur les arguments qui choisissent la fonction : une méthode peut
 aussi transmettre des arguments ordinaires supplémentaires, comme un montant.

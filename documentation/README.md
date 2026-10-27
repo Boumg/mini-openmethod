@@ -15,8 +15,9 @@ et les lambdas. Les détails de compilation et de réflexion peuvent attendre.
 3. [Construire et lancer les exemples](construction.md) pour essayer le code.
 
 Pour comprendre l'intérêt des opérations externes, lire la
-[comparaison avec Visitor](comparaison_visitor.md) : ajouter des traitements
-sans modifier les classes, avec un exemple de chaque approche.
+[comparaison avec Visitor et `std::visit`](comparaison_visitor.md) : exemples du
+Visitor classique, de `std::variant` et de mini-openmethod, puis comparaison
+des domaines de types, du dispatch et des références préparées.
 
 ## Comprendre ce qui se passe
 
